@@ -44,3 +44,20 @@
 3. 자기 자신에게 메일 1통 발송 → 30초 내보내기 + 20초 폴링 → 오브 메일 글리프 8초 + 말풍선 "새 메일 1통" → 요약 후 "할 일 N건 정리됨".
 4. 오브 클릭(또는 ⌥Space) → 알약으로 접힘/펼침.
 5. 아이콘이 안 보이면(폰트 동봉됨) 브라우저 캐시 새로고침(Ctrl+F5).
+
+## 5. 이식 결과 (2026-08-19, win-agent `feature/mail-slots`)
+
+§3 의 결정은 다음처럼 **플래그(기본 꺼짐)** 로 반영해 A~E 를 모두 이식했다. 상세는 win-agent `docs/MAIL_SLOTS.md`.
+
+| 단계 | 커밋 | 내용 |
+|---|---|---|
+| A 순수 로직 | `e907826` | `Services/MailSlots/*` (전처리·트리아지·코드 기한·프롬프트/스키마 v9·응답 검증·리포트 조합), WinOrb.Core 링크, `tools/WinOrb.MailSlotEval` 38개 단정 PASS |
+| B 카드 슬롯 | `c62c616` | JSON 스키마 요청(`MailSlotRequestFactory`), `MailSlotService`(캐시 `mail-slots.json`, 대기열 1개), 메일 요약 카드에 할 일·근거·기한·완료 행, 설정 `메일 슬롯` / `도착 시 요약` |
+| C 브리핑·리포트 | `272dac9` | `오늘 업무` 에 "메일 할 일" 섹션, `오늘 리포트`/`이번 주 리포트`/`오늘 마무리` (결정적 마크다운, 모델 호출 없음) |
+| D 도착 요약 | `e301c7f` | 알림 이벤트 1회 요약 + 캐시(설정 켜짐 시), `CaptureMailByIdAsync`(EntryID), llama-server `--poll 0` |
+| E 팔레트 | `98d9bdb` | 슬래시 팔레트 항목, `메일 검색 <키워드>`, `메일 슬롯 상태` |
+| 문서 | `2685364` | `docs/MAIL_SLOTS.md` |
+
+- 결정 반영: §3-1 은 (b) 를 메일 슬롯 경로에 한정, §3-2 는 "도착 이벤트 1회" 만(무한 백그라운드 없음), §3-3 은 입력 700/출력 180 토큰, §3-4 는 WebView2 없이 C# 이식.
+- 빌드: Mac 크로스 빌드 `dotnet build -c Release -r win-x64 -p:EnableWindowsTargeting=true` 0 오류, `scripts/publish-win-from-mac.sh` → `artifacts/releases/1.1.0/WinOrbPoc-win11-x64.zip`.
+- **미검증**: WPF 화면·Outlook COM 경로는 Mac 에서 실행할 수 없어 VDI 실행 확인이 남아 있다(순서는 `docs/MAIL_SLOTS.md` 마지막 절).
