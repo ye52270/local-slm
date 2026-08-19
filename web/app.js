@@ -49,7 +49,7 @@
     // 오브 상태: 연결 없음 → sorry / 요약·초안 작업 중 → clock+무지개 링 / 그 외 → idle (완료·새 메일은 flash 로 잠깐)
     if (!orb) return;
     if (!state.online) return orb.set('sorry', false);
-    const working = Object.keys(state.pending).length > 0 || (state.draft && state.draft.busy);
+    const working = Object.keys(state.pending).length > 0 || (state.draft && state.draft.busy) || !!state.queueRunning;
     if (working) return orb.set('clock', true);
     // WPF EmotionController 와 같은 의미: Thinking(작업 중) → Happy(완료, 4초 transient) → Idle. Alert(새 메일) 는 8초.
     if (orb.busy) { orb.set('heart', false); clearTimeout(orbDoneTimer); orbDoneTimer = setTimeout(() => orb.set('idle', false), 4000); return; }
@@ -149,7 +149,7 @@
     const late = act.filter((m) => { const n = daysLeft(state.slots[m.id].deadline); return n != null && n < 0; });
     const badge = $('sigMailBadge'); badge.textContent = act.length; badge.className = 'sig-badge ' + (late.length ? 'urgent' : 'neutral'); $('sigMail').title = `할 일 ${act.length}건${late.length ? ` · 지연 ${late.length}` : ''}`;
     const ft = $('focustag'); ft.hidden = !state.query; if (state.query) $('focusText').textContent = state.query;
-    orbState();
+    orbState(); renderQueue();
     if (state.collapsed) return;
     const stream = $('stream');
     stream.innerHTML = '';
@@ -235,12 +235,15 @@
 
   // 작업 과정 공개(기본 접힘) — 실행과 1:1. 메일별 요약 시간·토큰
   function renderLog(stream) {
-    if (!state.log.length) return;
-    const tr = el('button', 'trace', `<i class="ti ${state.logOpen ? 'ti-chevron-down' : 'ti-chevron-right'}"></i>작업 로그 <span class="n">${state.log.length}</span>`);
+    const qn = state.queue.length + (state.queueRunning ? 1 : 0);
+    if (!state.log.length && !qn) return;
+    const tr = el('button', 'trace', `<i class="ti ${state.logOpen ? 'ti-chevron-down' : 'ti-chevron-right'}"></i>작업 로그 <span class="n">${state.log.length}</span>${qn ? ` · 대기열 <span class="n">${qn}</span>` : ''}`);
     tr.dataset.act = 'log';
     stream.appendChild(tr);
     if (!state.logOpen) return;
     const steps = el('div', 'steps');
+    if (state.queueRunning) steps.appendChild(el('div', 'step', `<span class="dot" style="background:var(--acc)"></span><span class="t">${esc(state.queueRunning.label)}</span><span class="ag">${state.queueRunning.kind === 'draft' ? '초안' : '요약'} · 진행 중</span>`));
+    for (const t of state.queue.slice(0, 10)) steps.appendChild(el('div', 'step', `<span class="dot"></span><span class="t">${esc(t.label)}</span><span class="ag">${t.kind === 'draft' ? '초안' : '요약'} · 대기</span>`));
     for (const l of state.log.slice().reverse().slice(0, 30)) {
       steps.appendChild(el('div', 'step done', `<span class="dot"></span><span class="t">${esc(l.subject)}</span><span class="ag">${shortModel(l.model)} · ${(l.ms / 1000).toFixed(1)}s · ${l.ptok}/${l.tok}tok</span>`));
     }
@@ -269,7 +272,7 @@
     return { now, due, info, skip };
   }
   function itemRow(m, cls) {
-    const s = state.slots[m.id], sn = sender(m);
+    const s = state.slots[m.id] || { actionItems: [], summary: '', deadline: null }, sn = sender(m);
     const first = s.actionItems.length ? s.actionItems[0].text : s.summary;
     const n = daysLeft(s.deadline);
     const tag = s.deadline ? `<span class="${n < 0 ? 'late' : 'mono'}">${n < 0 ? '지연 ' : ''}${dTag(s.deadline)} ${s.deadline.slice(5).replace('-', '/')}</span>` : '';
@@ -313,23 +316,27 @@
   function renderWrap(stream) {
     const back = el('button', 'back', `<i class="ti ti-chevron-left"></i>오늘 업무`); back.dataset.act = 'back'; stream.appendChild(back);
     stream.appendChild(el('div', 'ask', `<span class="who"><i class="ti ti-user"></i></span><span class="q">오늘 마무리</span>`));
-    const doneToday = state.mails.filter((m) => state.done[m.id] && String(state.done[m.id]).slice(0, 10) === state.today);
+    const doneToday = state.mails.filter((m) => state.slots[m.id] && state.done[m.id] && String(state.done[m.id]).slice(0, 10) === state.today);
     const r = reportData('today');
     const tomorrow = r.due.filter((m) => daysLeft(state.slots[m.id].deadline) === 1);
     const week = r.due.filter((m) => { const n = daysLeft(state.slots[m.id].deadline); return n != null && n >= 2 && n <= 7; });
+    const open = r.due.filter((m) => !state.slots[m.id].deadline);          // 기한 없는 할 일
     const wrap = el('div', 'report');
-    const left = r.now.length;
+    const left = r.now.length + tomorrow.length + week.length + open.length;
     let lead = `오늘 <b>${doneToday.length}건</b>을 처리했습니다.`;
-    lead += left ? ` 남은 것 <b>${left}건</b>` : ' 남은 것은 없습니다';
-    if (tomorrow.length) lead += `${left ? ',' : '.'} 내일 기한 <b>${tomorrow.length}건</b>`;
-    lead += left || tomorrow.length ? '입니다.' : '';
-    if (left) { const top = r.now[0], ts = state.slots[top.id]; lead += ` 내일 아침 첫 일은 <b>${esc(ts.actionItems.length ? ts.actionItems[0].text : top.subject)}</b>(${esc(sender(top).name)})입니다.`; }
+    lead += left ? ` 남은 것 <b>${left}건</b>` : ' 남은 것은 없습니다.';
+    if (r.now.length) lead += ` (지연·오늘 ${r.now.length})`;
+    if (tomorrow.length) lead += `, 내일 기한 <b>${tomorrow.length}건</b>`;
+    if (left) lead += '입니다.';
+    const first = r.now[0] || tomorrow[0] || open[0] || week[0];
+    if (first) { const ts = state.slots[first.id]; lead += ` 내일 아침 첫 일은 <b>${esc(ts.actionItems.length ? ts.actionItems[0].text : first.subject)}</b>(${esc(sender(first).name)})입니다.`; }
     wrap.appendChild(el('div', 'wrap-hero', lead));
     const sect = (title, arr, cls) => { if (!arr.length) return; const box = el('div'); box.appendChild(el('div', 'sect', `${title}<span class="line"></span><span class="n">${arr.length}</span>`)); for (const m of arr) box.appendChild(itemRow(m, cls)); wrap.appendChild(box); };
     if (doneToday.length) { const box = el('div'); box.appendChild(el('div', 'sect', `오늘 처리한 것<span class="line"></span><span class="n">${doneToday.length}</span>`)); for (const m of doneToday.slice(0, 5)) { const it = itemRow(m, 'info done'); box.appendChild(it); } wrap.appendChild(box); }
     sect('남은 것 · 지연·오늘', r.now, 'todo');
     sect('내일 기한', tomorrow, 'due');
     sect('이번 주 남은 것', week, 'due');
+    sect('기한 없는 할 일', open, 'info');
     const acts = el('div', 'acts');
     acts.innerHTML = `<button class="btn" data-act="copy-report"><i class="ti ti-copy"></i>리포트 복사</button><button class="btn ghost" data-act="report" data-period="today">오늘 리포트</button>`;
     wrap.appendChild(acts);
@@ -337,7 +344,7 @@
   }
   function reportText() {
     if (state.period === 'wrap') {
-      const doneToday = state.mails.filter((m) => state.done[m.id] && String(state.done[m.id]).slice(0, 10) === state.today);
+      const doneToday = state.mails.filter((m) => state.slots[m.id] && state.done[m.id] && String(state.done[m.id]).slice(0, 10) === state.today);
       const r = reportData('today'); const lines = [`[오늘 마무리] ${state.today}`, `처리 ${doneToday.length}건 · 남은 것 ${r.now.length}건`];
       for (const m of r.now) { const s = state.slots[m.id]; lines.push(`- ${s.actionItems.length ? s.actionItems[0].text : s.summary}${s.deadline ? ` [${dTag(s.deadline)}]` : ''} — ${sender(m).name} · ${m.subject}`); }
       return lines.join('\n');
@@ -471,30 +478,59 @@
     await extractAll();
   }
 
-  // 요약 루프는 한 번에 하나만: 새 루프(모델 전환·다시 요약·새 메일)가 시작되면 이전 루프는 다음 메일부터 멈춘다.
-  // (같은 메일을 두 루프가 각각 모델에 보내던 문제 방지 — VDI 에선 시간이 두 배로 든다)
-  let runSeq = 0;
-  async function extractAll(force, only) {
-    const my = ++runSeq;
-    orbState();
+  // ---- 대기열: 모델이 필요한 일(요약·초안)은 전부 한 줄로 서서 하나씩 처리한다 (VDI 에서 동시 호출 금지, 진행 상황은 UI 로 정직하게)
+  function avgMs() { const d = state.log.filter((l) => l.model === state.model); return d.length ? d.reduce((a, l) => a + l.ms, 0) / d.length : 15000; }
+  function queueAdd(task, front) {
+    if (state.queue.some((t) => t.key === task.key) || (state.queueRunning && state.queueRunning.key === task.key)) return false;
+    if (front) state.queue.unshift(task); else state.queue.push(task);
+    return true;
+  }
+  function queueClear(kind) { state.queue = state.queue.filter((t) => t.kind !== kind); }
+  function renderQueue() {
+    const chip = $('queueChip'); if (!chip) return;
+    const n = state.queue.length + (state.queueRunning ? 1 : 0);
+    chip.hidden = n === 0;
+    if (n) {
+      const eta = Math.round((state.queue.length * avgMs() + (state.queueRunning ? avgMs() / 2 : 0)) / 1000);
+      $('queueText').textContent = state.queueRunning ? `${state.queueRunning.kind === 'draft' ? '초안' : '요약'} 중 · 대기 ${state.queue.length} · 약 ${eta}s` : `대기 ${n}`;
+    }
+  }
+  let pumping = false;
+  async function pumpQueue() {
+    if (pumping) return; pumping = true;
+    try {
+      while (state.queue.length) {
+        if (!state.online) { const h = await P.health(BASE); state.online = !!(h && h.ok); if (!state.online) break; }
+        const t = state.queue.shift(); state.queueRunning = t; renderQueue(); orbState();
+        try { await t.run(); } catch (e) { console.warn('queue task failed', t.key, e); }
+        state.queueRunning = null; renderQueue(); render();
+      }
+    } finally { pumping = false; renderQueue(); orbState(); }
+  }
+  // 요약 작업 등록: 캐시에 있으면 즉시, 없으면 대기열. force 면 캐시 무시(다시 요약).
+  function extractAll(force, only) {
+    if (force) queueClear('summary');
     const list = only ? only : ordered();
     for (const m of list) {
-      if (my !== runSeq) return;                       // 다른 루프가 이어받음
-      if (state.pending[m.id]) continue;               // 이미 처리 중
-      if (!force && state.slots[m.id]) continue;       // 이미 있음
-      if (!force) { const c = P.cache.get(m, state.model); if (c) { state.slots[m.id] = c; render(); continue; } }
-      if (!state.online) continue;
-      state.pending[m.id] = true; render();
-      try {
-        const s = await P.extract(m, { base: BASE, model: state.model, today: state.today });
-        state.slots[m.id] = s; P.cache.set(m, state.model, s);
-        if (!s.byRule) state.log.push({ subject: m.subject, model: state.model, ms: s.timing.totalMs || 0, ptok: s.timing.promptTokens || 0, tok: s.timing.tokens || 0, at: Date.now() });
-      } catch (e) {
-        state.slots[m.id] = { summary: '요약하지 못했습니다 · ' + e.message, actionItems: [], deadline: null, priority: 'low', category: 'other', cleanedBody: P.cleanBody(m.body), timing: {} };
-      }
-      delete state.pending[m.id]; render();
+      if (state.pending[m.id]) continue;
+      if (!force && state.slots[m.id]) continue;
+      if (!force) { const c = P.cache.get(m, state.model); if (c) { state.slots[m.id] = c; continue; } }
+      const model = state.model;
+      queueAdd({ key: `summary|${model}|${m.id}`, kind: 'summary', mailId: m.id, label: m.subject, run: async () => {
+        if (state.model !== model) return;               // 그 사이 모델이 바뀜 → 새 루프가 다시 등록
+        state.pending[m.id] = true; render();
+        try {
+          const s = await P.extract(m, { base: BASE, model, today: state.today });
+          state.slots[m.id] = s; P.cache.set(m, model, s);
+          if (!s.byRule) state.log.push({ subject: m.subject, model, ms: s.timing.totalMs || 0, ptok: s.timing.promptTokens || 0, tok: s.timing.tokens || 0, at: Date.now() });
+        } catch (e) {
+          state.slots[m.id] = { summary: '요약하지 못했습니다 · ' + e.message, actionItems: [], deadline: null, priority: 'low', category: 'other', cleanedBody: P.cleanBody(m.body), timing: {} };
+        }
+        delete state.pending[m.id];
+      } });
     }
-    orbState();
+    render(); renderQueue();
+    pumpQueue();
   }
 
   // 자동 새로고침: -Panel -Watch(또는 --panel --watch) 가 주기적으로 다시 내보낸 inbox.json 에서 새 메일만 골라 요약한다
@@ -512,23 +548,31 @@
       if (orb) orb.flash('mail', 8000, 'idle');
       toast('mail', `새 메일 ${fresh.length}통`, fresh[0].subject, 6000);
       render();
-      await extractAll(false, fresh);   // 새 메일만
-      const withAct = fresh.filter((m) => state.slots[m.id] && state.slots[m.id].actionItems.length);
-      if (withAct.length) toast('flag-2', `할 일 ${withAct.length}건 정리됨`, state.slots[withAct[0].id].actionItems[0].text, 6000);
+      extractAll(false, fresh);   // 새 메일만 대기열에
+      // 요약이 끝나면 할 일 알림 (대기열이 비는 시점에 확인)
+      const waitDone = setInterval(() => {
+        if (fresh.some((m) => state.pending[m.id] || state.queue.some((t) => t.mailId === m.id))) return;
+        clearInterval(waitDone);
+        const withAct = fresh.filter((m) => state.slots[m.id] && state.slots[m.id].actionItems.length && !['newsletter', 'verification'].includes(state.slots[m.id].category));
+        if (withAct.length) { toast('flag-2', `할 일 ${withAct.length}건 정리됨`, state.slots[withAct[0].id].actionItems[0].text, 6000); if (orb) orb.flash('bell', 4000, 'idle'); }
+      }, 2000);
     } catch (e) { /* 파일이 없거나 쓰는 중이면 다음 주기에 */ }
   }
 
-  async function startDraft(id) {
+  // 답장 초안: 사용자가 직접 요청한 일이라 대기열 맨 앞에 선다
+  function startDraft(id) {
     const m = state.mails.find((x) => x.id === id); if (!m) return;
     state.view = 'summary'; state.current = id;
     state.draft = { mailId: id, subject: '', body: '', busy: true }; render(); orbState();
-    try {
-      const d = await P.draftReply(m, state.slots[id], { base: BASE, model: state.model });
-      state.draft = { mailId: id, subject: d.subject, body: d.body, busy: false };
-    } catch (e) {
-      state.draft = { mailId: id, subject: 'RE: ' + m.subject, body: '(초안을 만들지 못했습니다 · ' + e.message + ')', busy: false };
-    }
-    render();
+    queueAdd({ key: `draft|${id}`, kind: 'draft', mailId: id, label: m.subject, run: async () => {
+      try {
+        const d = await P.draftReply(m, state.slots[id], { base: BASE, model: state.model });
+        if (state.draft && state.draft.mailId === id) state.draft = { mailId: id, subject: d.subject, body: d.body, busy: false };
+      } catch (e) {
+        if (state.draft && state.draft.mailId === id) state.draft = { mailId: id, subject: 'RE: ' + m.subject, body: '(초안을 만들지 못했습니다 · ' + e.message + ')', busy: false };
+      }
+    } }, true);
+    renderQueue(); pumpQueue();
   }
 
   function openMailto() {
@@ -586,12 +630,73 @@
     await extractAll();   // 캐시는 모델별이라 없는 것만 새로 요약 (라우터가 모델을 교체)
   });
 
+  // ---- 명령 팔레트(⌘K 스타일): 타이핑하면 명령 후보 + 캐시된 메일 즉시 검색. 자유 질문은 받지 않는다.
+  function commandList() {
+    const cmds = [
+      { id: 'report-today', label: '오늘 리포트', hint: '지금 해야 할 일 · 다가오는 기한', icon: 'ti-report', run: () => { state.view = 'report'; state.period = 'today'; } },
+      { id: 'report-week', label: '이번 주 리포트', hint: '이번 주 해야 할 일', icon: 'ti-calendar-week', run: () => { state.view = 'report'; state.period = 'week'; } },
+      { id: 'report-wrap', label: '오늘 마무리', hint: '처리한 것 · 남은 것 · 내일 기한', icon: 'ti-moon', run: () => { state.view = 'report'; state.period = 'wrap'; } },
+      { id: 'brief', label: '오늘 업무', hint: '처음 화면', icon: 'ti-home', run: () => { state.view = 'brief'; state.query = ''; } },
+      { id: 'refresh', label: '다시 요약', hint: '캐시 무시 · 시간이 걸립니다', icon: 'ti-refresh', run: () => { state.slots = {}; extractAll(true); } },
+      { id: 'export', label: '결과 내보내기', hint: 'JSON 저장 (평가용)', icon: 'ti-download', run: () => { $('btnExport').click(); } },
+      { id: 'collapse', label: '접기', hint: '알약으로', icon: 'ti-minus', run: () => { state.collapsed = true; } },
+    ];
+    for (const m of state.models) if (m.id !== state.model) cmds.push({ id: 'model|' + m.id, label: `${shortModel(m.id)}로 전환`, hint: '요약 모델 바꾸기 (교체 시간 몇 초)', icon: 'ti-cpu', run: () => { state.model = m.id; localStorage.setItem('slm-model', state.model); state.slots = {}; extractAll(); } });
+    return cmds;
+  }
+  function searchMails(q) {
+    const ql = q.toLowerCase(); if (!ql) return [];
+    const hits = [];
+    for (const m of state.mails) {
+      const s = state.slots[m.id] || {};
+      const hay = [m.subject, m.senderName, s.summary || '', ...(s.actionItems || []).map((a) => a.text)];
+      const idx = hay.findIndex((h) => (h || '').toLowerCase().includes(ql));
+      if (idx >= 0) hits.push({ mail: m, where: idx === 0 ? '' : idx === 1 ? '' : hay[idx] });
+      if (hits.length >= 6) break;
+    }
+    return hits;
+  }
+  const hl = (text, q) => { const t = esc(text); if (!q) return t; const i = t.toLowerCase().indexOf(esc(q).toLowerCase()); return i < 0 ? t : t.slice(0, i) + '<mark>' + t.slice(i, i + q.length) + '</mark>' + t.slice(i + q.length); };
+  function renderPalette() {
+    const pal = $('palette'); const q = $('cmd').value.trim();
+    if (!state.palette.open) { pal.hidden = true; return; }
+    const cmds = commandList().filter((c) => !q || c.label.toLowerCase().includes(q.toLowerCase()) || (c.hint || '').includes(q)).slice(0, q ? 5 : 4);
+    const mails = q.length >= 1 ? searchMails(q) : [];
+    const items = [...cmds.map((c) => ({ type: 'cmd', c })), ...mails.map((h) => ({ type: 'mail', h }))];
+    if (q && !cmds.length) items.push({ type: 'search', q });
+    state.palette.items = items; if (state.palette.sel >= items.length) state.palette.sel = 0;
+    let html = '';
+    if (cmds.length) html += `<div class="psec">명령</div>` + cmds.map((c, i) => `<div class="pitem ${state.palette.sel === i ? 'sel' : ''}" data-pi="${i}"><i class="ti ${c.icon}"></i><span class="t">${hl(c.label, q)}</span><span class="m">${esc(c.hint)}</span>${i === state.palette.sel ? '<span class="k">↵</span>' : ''}</div>`).join('');
+    if (mails.length) html += `<div class="psec">메일 · 즉시</div>` + mails.map((h, j) => { const i = cmds.length + j; const s = state.slots[h.mail.id]; return `<div class="pitem ${state.palette.sel === i ? 'sel' : ''}" data-pi="${i}"><i class="ti ti-mail"></i><span class="t">${hl(h.mail.subject, q)}</span><span class="m">${esc(sender(h.mail).name)}${s && s.actionItems.length ? ' · 할 일 ' + s.actionItems.length : ''}${s && s.deadline ? ' · ' + dTag(s.deadline) : ''}</span></div>`; }).join('');
+    if (q && !cmds.length) html += `<div class="pitem ${state.palette.sel === items.length - 1 ? 'sel' : ''}" data-pi="${items.length - 1}"><i class="ti ti-search"></i><span class="t">“${esc(q)}” 로 목록 걸러 보기</span><span class="k">↵</span></div>`;
+    if (!items.length) html = `<div class="pempty">할 수 있는 일: 오늘 리포트 · 이번 주 · 오늘 마무리 · 메일 검색 · 모델 전환</div>`;
+    pal.innerHTML = html; pal.hidden = false;
+  }
+  function paletteRun(i) {
+    const it = state.palette.items[i]; if (!it) return;
+    $('cmd').value = ''; state.palette.open = false; renderPalette();
+    if (it.type === 'cmd') { it.c.run(); state.collapsed = state.collapsed && it.c.id === 'collapse'; render(); return; }
+    if (it.type === 'mail') { state.view = 'summary'; state.current = it.h.mail.id; state.showFull = false; state.showExcerpt = false; state.collapsed = false; render(); return; }
+    if (it.type === 'search') { state.query = it.q; state.view = 'brief'; state.collapsed = false; render(); }
+  }
+  $('cmd').addEventListener('focus', () => { state.palette.open = true; state.palette.sel = 0; renderPalette(); });
+  $('cmd').addEventListener('input', () => { state.palette.open = true; state.palette.sel = 0; renderPalette(); });
+  $('cmd').addEventListener('blur', () => { setTimeout(() => { state.palette.open = false; renderPalette(); }, 150); });
+  $('cmd').addEventListener('keydown', (e) => {
+    if (!state.palette.open) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); state.palette.sel = Math.min(state.palette.items.length - 1, state.palette.sel + 1); renderPalette(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); state.palette.sel = Math.max(0, state.palette.sel - 1); renderPalette(); }
+    else if (e.key === 'Escape') { e.preventDefault(); if ($('cmd').value) { $('cmd').value = ''; renderPalette(); } else { $('cmd').blur(); } }
+  });
+  $('palette').addEventListener('mousedown', (e) => { const it = e.target.closest('[data-pi]'); if (it) { e.preventDefault(); paletteRun(+it.dataset.pi); } });
+
   // 컴포저: 되는 명령만. 자연어 해석은 하지 않는다(소형 모델로 흔들리는 길은 열지 않는다)
   function runCommand(text) {
     const t = text.trim(); if (!t) return;
     const lower = t.toLowerCase();
     if (/^(오늘|투데이)(\s*리포트)?$|^리포트$/.test(t)) { state.view = 'report'; state.period = 'today'; }
     else if (/^(이번\s*주|주간)(\s*리포트)?$/.test(t)) { state.view = 'report'; state.period = 'week'; }
+    else if (/^(오늘\s*)?마무리$|^퇴근$/.test(t)) { state.view = 'report'; state.period = 'wrap'; }
     else if (/^(오늘\s*업무|처음|홈)$/.test(t)) { state.view = 'brief'; state.query = ''; }
     else if (/^(접기|닫기)$/.test(t)) { state.collapsed = true; }
     else if (/^(다시|새로고침|다시\s*요약)$/.test(t)) { state.slots = {}; render(); extractAll(true); return; }
@@ -605,13 +710,41 @@
     else { state.query = t.replace(/^(메일\s*)?(검색|요약)\s*/,'').trim() || t; state.view = 'brief'; state.collapsed = false; }
     render();
   }
-  $('composer').addEventListener('submit', (ev) => { ev.preventDefault(); const i = $('cmd'); runCommand(i.value); i.value = ''; });
+  $('composer').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (state.palette.open && state.palette.items.length) { paletteRun(state.palette.sel); return; }
+    const i = $('cmd'); runCommand(i.value); i.value = ''; state.palette.open = false; renderPalette();
+  });
   $('focusClear').addEventListener('click', () => { state.query = ''; render(); });
   $('orb').addEventListener('click', () => { state.collapsed = !state.collapsed; render(); if (!state.collapsed) $('cmd').focus(); });
   $('sigMail').addEventListener('click', () => { state.collapsed = false; state.view = 'report'; state.period = 'today'; render(); });
+  $('queueChip').addEventListener('click', () => { state.collapsed = false; state.view = 'brief'; state.logOpen = true; render(); });
   $('toastClose').addEventListener('click', () => { $('toast').hidden = true; });
-  $('toastBody').addEventListener('click', (e) => { if (e.target.closest('#toastClose')) return; $('toast').hidden = true; state.collapsed = false; state.view = 'brief'; render(); });
-  document.addEventListener('keydown', (e) => { if (e.altKey && e.code === 'Space') { e.preventDefault(); state.collapsed = !state.collapsed; render(); if (!state.collapsed) $('cmd').focus(); } });
+  $('toastBody').addEventListener('click', (e) => { if (e.target.closest('#toastClose')) return; $('toast').hidden = true; state.collapsed = false; if ($('toastBody').dataset.go === 'wrap') { state.view = 'report'; state.period = 'wrap'; delete $('toastBody').dataset.go; } else state.view = 'brief'; render(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && e.code === 'Space') { e.preventDefault(); state.collapsed = !state.collapsed; render(); if (!state.collapsed) $('cmd').focus(); return; }
+    const typing = ['INPUT', 'TEXTAREA'].includes((e.target || {}).tagName);
+    if (e.key === '/' && !typing) { e.preventDefault(); state.collapsed = false; render(); $('cmd').focus(); return; }
+    if (e.key === 'Escape' && !typing) { if (state.draft) state.draft = null; else if (state.view !== 'brief') state.view = 'brief'; else if (state.query) state.query = ''; render(); }
+  });
+
+  // ---- 리듬: 부르지 않아도 오는 것 (첫 실행 정리 알림 · 17:30 오늘 마무리)
+  function rhythmTick() {
+    const now = new Date(); const key = state.today;
+    const idle = !state.queue.length && !state.queueRunning;
+    if (idle && localStorage.getItem('slm-greeted') !== key && state.mails.length && state.mails.every((m) => state.slots[m.id])) {
+      localStorage.setItem('slm-greeted', key);
+      const acts = state.mails.filter((m) => state.slots[m.id].actionItems.length && !['newsletter', 'verification'].includes(state.slots[m.id].category) && !isDone(m.id)).length;
+      toast('bell', `메일 ${state.mails.length}통 정리됨`, acts ? `할 일 ${acts}건 · 오늘 업무에서 확인` : '오늘 조치할 것이 없습니다', 8000);
+      if (orb) orb.flash('bell', 4000, 'idle');
+    }
+    if (now.getHours() * 60 + now.getMinutes() >= 17 * 60 + 30 && localStorage.getItem('slm-wrap') !== key) {
+      localStorage.setItem('slm-wrap', key);
+      toast('moon', '오늘 마무리 리포트가 준비됐습니다', '클릭하면 남은 것과 내일 기한을 봅니다', 10000);
+      $('toastBody').dataset.go = 'wrap';
+      if (orb) orb.flash('bell', 4000, 'idle');
+    }
+  }
 
   (async function init() {
     syncSeg();
@@ -625,5 +758,6 @@
     await loadMails();
     setInterval(async () => { const h2 = await P.health(BASE); const on = !!(h2 && h2.ok); if (on !== state.online) { state.online = on; if (h2 && h2.models.length) state.models = h2.models; renderStatus(); orbState(); } }, 15000);
     setInterval(pollInbox, 60000);   // 리소스 절약: 1분 폴링 (내보내기 주기는 -WatchInterval, 기본 5분)
+    setInterval(rhythmTick, 30000); setTimeout(rhythmTick, 5000);
   })();
 })();

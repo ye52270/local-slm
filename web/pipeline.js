@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  const PROMPT_VERSION = 'v8';
+  const PROMPT_VERSION = 'v9';
 
   const DEFAULTS = {
     base: '',                 // '' = 같은 출처(llama-server --path 로 서빙할 때). 아니면 'http://127.0.0.1:8080'
@@ -320,6 +320,8 @@
     }
     // 광고·소식지·자동발송 안전망: 소형 모델이 "페이지 방문" 같은 문구를 할 일로 잡는 것을 막는다(추천·리포트에서 제외됨)
     let category = d.category || 'other';
+    // 모델이 '인증'이라 했지만 인증 신호가 없으면(예: 만족도 조사) 되돌린다 — 인증은 리포트에서 빠지므로 오분류가 비싸다
+    if (category === 'verification' && !VERIFY_RE.test(mail.subject || '') && !VERIFY_RE.test(cleaned.slice(0, 1500))) category = items.length ? 'action_required' : 'notice';
     // (noreply 류는 사내 시스템 알림도 많아 제외하지 않는다 — 광고 표지·SNS·구독 신호만 본다)
     const adSig = /(\(광고\)|\[광고\]|광고|뉴스레터|newsletter|소식지|웹진|매거진|다이제스트|digest|회원님|구독|unsubscribe|수신거부|facebook|linkedin|instagram|youtube)/i;
     if (!deadline && (adSig.test(mail.subject || '') || adSig.test(mail.senderAddr || '') || adSig.test(mail.senderName || '') || /수신거부|unsubscribe|구독\s*취소/i.test(cleaned))) {
