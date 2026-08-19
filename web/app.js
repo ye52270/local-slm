@@ -103,19 +103,27 @@
   }
   function saveSnooze() { localStorage.setItem('slm-snooze', JSON.stringify([...state.snooze])); }
 
-  // 정렬: 할 일 있음 → 기한 → 우선순위. 나중에 처리한 것은 맨 뒤.
+  // 정렬: 할 일 있음(기한순) → 요약 대기(최신순) → 확인만 → 광고·인증 → 나중에 → 완료
+  function rank(m) {
+    if (isDone(m.id)) return 5;
+    if (state.snooze.has(m.id)) return 4;
+    const s = state.slots[m.id];
+    if (!s) return 1;
+    if (s.actionItems.length && !['newsletter', 'verification'].includes(s.category)) return 0;
+    if (['newsletter', 'verification'].includes(s.category)) return 3;
+    return 2;
+  }
   function ordered() {
     const pr = { high: 0, medium: 1, low: 2 };
     return state.mails.slice().sort((a, b) => {
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
       const sa = state.slots[a.id], sb = state.slots[b.id];
-      const za = (isDone(a.id) ? 2 : 0) + (state.snooze.has(a.id) ? 1 : 0), zb = (isDone(b.id) ? 2 : 0) + (state.snooze.has(b.id) ? 1 : 0);
-      if (za !== zb) return za - zb;
-      const ha = sa && sa.actionItems.length ? 0 : 1, hb = sb && sb.actionItems.length ? 0 : 1;
-      if (ha !== hb) return ha - hb;
       const da = sa && sa.deadline ? sa.deadline : '9999', db = sb && sb.deadline ? sb.deadline : '9999';
       if (da !== db) return da < db ? -1 : 1;
-      const pa = sa ? pr[sa.priority] ?? 3 : 4, pb = sb ? pr[sb.priority] ?? 3 : 4;
-      return pa - pb;
+      const pa = sa ? pr[sa.priority] ?? 3 : 3, pb = sb ? pr[sb.priority] ?? 3 : 3;
+      if (pa !== pb) return pa - pb;
+      return (P.parseReceived(b.received) || 0) - (P.parseReceived(a.received) || 0);   // 같은 등급이면 최신 먼저
     });
   }
   // 추천 1건: 할 일이 있고 인증/소식지가 아닌 메일 중 — 다가오는 기한 → 기한 없음(우선순위·최신) → 지난 기한 순
