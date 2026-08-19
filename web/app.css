@@ -93,3 +93,21 @@ html,body{margin:0;min-height:100%}
 .doneline{font-size:11.5px;color:var(--pf);display:flex;align-items:center;gap:6px}
 .doneline b{font-family:var(--font-mono);font-weight:500;color:var(--pm)}
 .report .wrap-hero{border-radius:var(--r-card);padding:12px 14px;background:var(--acc-bg);border:1px solid var(--acc-bd);font-size:13px;line-height:1.55}
+
+/* 설정 · 알림 */
+.sig-badge[hidden]{display:none}
+.settings .fld{margin-bottom:12px}
+.settings .fld label{font-size:10.5px;color:var(--pf);font-family:var(--font-mono);letter-spacing:.06em;display:block;margin-bottom:6px}
+.settings .opts{display:flex;gap:6px;flex-wrap:wrap}
+.settings .opt{height:26px;padding:0 10px;border-radius:var(--r-btn);border:0.5px solid var(--btn-bd);background:var(--btn-bg);color:var(--pm);font-size:12px;cursor:pointer}
+.settings .opt.on{color:var(--acc);background:var(--acc-bg);border-color:var(--acc-bd)}
+.settings input[type=time]{height:26px;border:0.5px solid var(--btn-bd);border-radius:var(--r-btn);background:var(--btn-bg);color:var(--pt);padding:0 8px;font-size:12px}
+.settings .note{font-size:11px;color:var(--pf);margin-top:4px}
+.notice{display:flex;gap:10px;padding:9px 10px;border-radius:var(--r-item);background:var(--item-bg);border:var(--item-bd);cursor:pointer;align-items:flex-start}
+.notice .ic{width:26px;height:26px;border-radius:50%;background:var(--acc-bg);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+.notice .txt{min-width:0;flex:1}
+.notice .t{font-size:12.5px}
+.notice .m{font-size:11px;color:var(--pf);margin-top:2px}
+.notice .when{font-family:var(--font-mono);font-size:10.5px;color:var(--pf);flex:none}
+.notice.unread .t{color:var(--pt);font-weight:500}
+.seltag{}

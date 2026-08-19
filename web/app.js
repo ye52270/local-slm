@@ -40,7 +40,13 @@
     queue: [],        // 모델 작업 대기열 {key, kind, mailId, label}
     queueRunning: null,
     palette: { open: false, sel: 0, items: [] },
+    settings: Object.assign({ wrapTime: '17:30', notify: true, weekly: true, defaultReport: 'today' }, JSON.parse(localStorage.getItem('slm-settings') || '{}')),
+    notices: JSON.parse(localStorage.getItem('slm-notices') || '[]'),   // {at, icon, title, msg, go, read}
+    selected: null,   // Outlook 에서 지금 선택한 메일 (selected.json)
+    selectedDismissed: '',
   };
+  function saveSettings() { localStorage.setItem('slm-settings', JSON.stringify(state.settings)); }
+  function saveNotices() { localStorage.setItem('slm-notices', JSON.stringify(state.notices.slice(0, 50))); }
   function saveDone() { localStorage.setItem('slm-done', JSON.stringify(state.done)); }
   const isDone = (id) => !!state.done[id];
   const orb = window.MolduOrb ? window.MolduOrb.Orb($('orb')) : null;
@@ -56,9 +62,17 @@
     if (!['heart', 'mail'].includes(orb.face)) orb.set('idle', false);
   }
   let toastTimer = null;
-  function toast(icon, title, msg, ms) {
+  function toast(icon, title, msg, ms, go) {
+    state.notices.unshift({ at: Date.now(), icon, title, msg, go: go || 'brief', read: false }); state.notices = state.notices.slice(0, 50); saveNotices();
+    if (state.settings.notify === false) { renderBell(); return; }
     $('toastIcon').className = 'ti ti-' + icon; $('toastTitle').textContent = title; $('toastMsg').textContent = msg;
+    $('toastBody').dataset.go = go || 'brief';
     $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, ms || 6000);
+    renderBell();
+  }
+  function renderBell() {
+    const n = state.notices.filter((x) => !x.read).length; const b = $('sigBellBadge'); if (!b) return;
+    b.hidden = n === 0; b.textContent = n; b.className = 'sig-badge neutral';
   }
   state.model = localStorage.getItem('slm-model') || '';
 
@@ -149,12 +163,16 @@
     const late = act.filter((m) => { const n = daysLeft(state.slots[m.id].deadline); return n != null && n < 0; });
     const badge = $('sigMailBadge'); badge.textContent = act.length; badge.className = 'sig-badge ' + (late.length ? 'urgent' : 'neutral'); $('sigMail').title = `할 일 ${act.length}건${late.length ? ` · 지연 ${late.length}` : ''}`;
     const ft = $('focustag'); ft.hidden = !state.query; if (state.query) $('focusText').textContent = state.query;
-    orbState(); renderQueue();
+    const st = $('seltag'); const selOn = state.selected && state.selected.id !== state.selectedDismissed;
+    st.hidden = !selOn; if (selOn) $('selText').textContent = state.selected.subject;
+    orbState(); renderQueue(); renderBell();
     if (state.collapsed) return;
     const stream = $('stream');
     stream.innerHTML = '';
     if (state.view === 'summary' && state.current) renderSummary(stream);
     else if (state.view === 'report') renderReport(stream);
+    else if (state.view === 'settings') renderSettings(stream);
+    else if (state.view === 'notices') renderNotices(stream);
     else renderBrief(stream);
     renderArtifact();
   }
@@ -179,8 +197,11 @@
     head.appendChild(counts);
     stream.appendChild(head);
     const chips = el('div', 'chips views');
-    const late16 = new Date().getHours() >= 16;
-    chips.innerHTML = `<button class="chip ${late16 ? '' : 'first'}" data-act="report" data-period="today"><i class="ti ti-report"></i>오늘 리포트</button><button class="chip" data-act="report" data-period="week"><i class="ti ti-calendar-week"></i>이번 주 리포트</button><button class="chip ${late16 ? 'first' : ''}" data-act="report" data-period="wrap"><i class="ti ti-moon"></i>오늘 마무리</button>`;
+    const [wh, wm] = (state.settings.wrapTime || '17:30').split(':').map(Number);
+    const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+    const nearWrap = nowM >= wh * 60 + wm - 90;   // 마무리 90분 전부터 마무리 칩 강조
+    const dr = state.settings.defaultReport || 'today';
+    chips.innerHTML = `<button class="chip ${!nearWrap && dr === 'today' ? 'first' : ''}" data-act="report" data-period="today"><i class="ti ti-report"></i>오늘 리포트</button><button class="chip ${!nearWrap && dr === 'week' ? 'first' : ''}" data-act="report" data-period="week"><i class="ti ti-calendar-week"></i>이번 주 리포트</button><button class="chip ${nearWrap ? 'first' : ''}" data-act="report" data-period="wrap"><i class="ti ti-moon"></i>오늘 마무리</button>`;
     const doneToday = Object.entries(state.done).filter(([, at]) => String(at).slice(0, 10) === state.today).length;
     if (doneToday) chips.insertAdjacentHTML('beforeend', `<span class="doneline" style="margin-left:auto"><i class="ti ti-check"></i>오늘 완료 <b>${doneToday}</b></span>`);
     stream.appendChild(chips);
@@ -440,6 +461,39 @@
     }
   }
 
+  // ---- 설정(최소): 모델 · 마무리 시각 · 알림 · 기본 리포트 · 캐시
+  function renderSettings(stream) {
+    const back = el('button', 'back', `<i class="ti ti-chevron-left"></i>오늘 업무`); back.dataset.act = 'back'; stream.appendChild(back);
+    stream.appendChild(el('div', 'head', `<h1>설정</h1>`));
+    const box = el('div', 'settings');
+    const models = state.models.length ? state.models : (state.model ? [{ id: state.model }] : []);
+    box.innerHTML = `
+      <div class="fld"><label>MODEL</label><div class="opts">${models.map((m) => `<button class="opt ${m.id === state.model ? 'on' : ''}" data-set="model" data-v="${esc(m.id)}">${esc(shortModel(m.id))}</button>`).join('') || '<span class="note">서버 연결 없음</span>'}</div><div class="note">4B 가 정확하고, 2B 는 2배 빠릅니다. 결과 캐시는 모델별로 따로 둡니다.</div></div>
+      <div class="fld"><label>오늘 마무리 알림</label><input type="time" id="setWrap" value="${esc(state.settings.wrapTime)}"><span class="note" style="margin-left:8px">이 시각 이후 한 번, 남은 것·내일 기한을 말풍선으로</span></div>
+      <div class="fld"><label>알림</label><div class="opts"><button class="opt ${state.settings.notify !== false ? 'on' : ''}" data-set="notify" data-v="1">말풍선 켬</button><button class="opt ${state.settings.notify === false ? 'on' : ''}" data-set="notify" data-v="0">끔 (알림함에만 쌓임)</button></div></div>
+      <div class="fld"><label>주간 리포트</label><div class="opts"><button class="opt ${state.settings.weekly !== false ? 'on' : ''}" data-set="weekly" data-v="1">월요일 아침 알림</button><button class="opt ${state.settings.weekly === false ? 'on' : ''}" data-set="weekly" data-v="0">끔</button></div></div>
+      <div class="fld"><label>기본 리포트 칩</label><div class="opts"><button class="opt ${state.settings.defaultReport === 'today' ? 'on' : ''}" data-set="defaultReport" data-v="today">오늘</button><button class="opt ${state.settings.defaultReport === 'week' ? 'on' : ''}" data-set="defaultReport" data-v="week">이번 주</button></div></div>
+      <div class="fld"><label>데이터</label><div class="opts"><button class="opt" data-set="clear-cache">요약 캐시 비우기</button><button class="opt" data-set="clear-done">완료·나중에 초기화</button><button class="opt" data-set="clear-notices">알림 이력 비우기</button></div><div class="note">전부 이 브라우저 안에만 저장됩니다(메일은 PC 밖으로 나가지 않음).</div></div>
+      <div class="fld"><label>서버</label><div class="note">${esc(BASE || location.origin)} · ${state.router ? '라우터 모드(모델 전환 가능)' : '단일 모델'} · 요약 ${state.log.length}통 · 평균 ${(avgMs() / 1000).toFixed(1)}s</div></div>`;
+    stream.appendChild(box);
+    box.querySelector('#setWrap').addEventListener('change', (e) => { state.settings.wrapTime = e.target.value || '17:30'; saveSettings(); });
+  }
+  function renderNotices(stream) {
+    const back = el('button', 'back', `<i class="ti ti-chevron-left"></i>오늘 업무`); back.dataset.act = 'back'; stream.appendChild(back);
+    stream.appendChild(el('div', 'head', `<h1>알림</h1><div class="counts"><span class="cnt" style="cursor:default">전체 <b>${state.notices.length}</b></span></div>`));
+    if (!state.notices.length) { stream.appendChild(el('div', 'empty', '아직 알림이 없습니다. 새 메일이 정리되거나 마무리 시각이 되면 여기에 쌓입니다.')); return; }
+    const wrap = el('div', 'stack');
+    for (const [i, n] of state.notices.entries()) {
+      const d = new Date(n.at);
+      const row = el('div', 'notice' + (n.read ? '' : ' unread')); row.dataset.act = 'notice'; row.dataset.i = i;
+      row.innerHTML = `<span class="ic"><i class="ti ti-${esc(n.icon)}"></i></span><div class="txt"><div class="t">${esc(n.title)}</div><div class="m">${esc(n.msg)}</div></div><span class="when">${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}</span>`;
+      wrap.appendChild(row);
+    }
+    stream.appendChild(wrap);
+    state.notices.forEach((n) => { n.read = true; }); saveNotices();
+  }
+  const pad2 = (n) => String(n).padStart(2, '0');
+
   function renderArtifact() {
     const art = $('artifact'), launcher = $('launcher');
     if (!state.draft) { art.hidden = true; launcher.classList.remove('wide'); return; }
@@ -582,6 +636,17 @@
   }
 
   document.addEventListener('click', async (ev) => {
+    const so = ev.target.closest('[data-set]');
+    if (so) {
+      const k = so.dataset.set, v = so.dataset.v;
+      if (k === 'model') { if (v !== state.model) { state.model = v; localStorage.setItem('slm-model', v); state.slots = {}; extractAll(); } }
+      else if (k === 'notify' || k === 'weekly') { state.settings[k] = v === '1'; saveSettings(); }
+      else if (k === 'defaultReport') { state.settings.defaultReport = v; saveSettings(); }
+      else if (k === 'clear-cache') { P.cache.clear(); state.slots = {}; extractAll(); toast('trash', '요약 캐시 비움', '필요한 것만 다시 요약합니다'); }
+      else if (k === 'clear-done') { state.done = {}; saveDone(); state.snooze = new Set(); saveSnooze(); }
+      else if (k === 'clear-notices') { state.notices = []; saveNotices(); }
+      render(); return;
+    }
     const b = ev.target.closest('[data-act]'); if (!b) return;
     const act = b.dataset.act, id = b.dataset.id;
     switch (act) {
@@ -596,6 +661,9 @@
       case 'copy': try { await navigator.clipboard.writeText(state.draft.body); b.innerHTML = '<i class="ti ti-check"></i>복사됨'; } catch (e) {} return;
       case 'mailto': openMailto(); return;
       case 'clear-query': state.query = ''; break;
+      case 'settings': state.view = 'settings'; break;
+      case 'notices': state.view = 'notices'; break;
+      case 'notice': { const n = state.notices[+b.dataset.i]; if (n) { n.read = true; saveNotices(); if (n.go === 'wrap') { state.view = 'report'; state.period = 'wrap'; } else if (n.go === 'week') { state.view = 'report'; state.period = 'week'; } else state.view = 'brief'; } break; }
       case 'done': if (isDone(id)) delete state.done[id]; else { state.done[id] = new Date().toISOString(); if (orb) orb.flash('check', 1500, 'idle'); } saveDone(); break;
       case 'report': state.view = 'report'; state.period = b.dataset.period || 'today'; state.draft = null; break;
       case 'log': state.logOpen = !state.logOpen; break;
@@ -632,7 +700,13 @@
 
   // ---- 명령 팔레트(⌘K 스타일): 타이핑하면 명령 후보 + 캐시된 메일 즉시 검색. 자유 질문은 받지 않는다.
   function commandList() {
-    const cmds = [
+    const cmds = [];
+    if (state.selected && state.selected.id !== state.selectedDismissed) {
+      const sid = state.selected.id;
+      cmds.push({ id: 'sel-sum', label: '이 메일 요약', hint: state.selected.subject.slice(0, 40), icon: 'ti-pin', run: () => { state.view = 'summary'; state.current = sid; } });
+      cmds.push({ id: 'sel-draft', label: '이 메일 답장 초안', hint: '대기열 맨 앞 · 승인 후 발송', icon: 'ti-pencil', run: () => { startDraft(sid); } });
+    }
+    cmds.push(
       { id: 'report-today', label: '오늘 리포트', hint: '지금 해야 할 일 · 다가오는 기한', icon: 'ti-report', run: () => { state.view = 'report'; state.period = 'today'; } },
       { id: 'report-week', label: '이번 주 리포트', hint: '이번 주 해야 할 일', icon: 'ti-calendar-week', run: () => { state.view = 'report'; state.period = 'week'; } },
       { id: 'report-wrap', label: '오늘 마무리', hint: '처리한 것 · 남은 것 · 내일 기한', icon: 'ti-moon', run: () => { state.view = 'report'; state.period = 'wrap'; } },
@@ -640,7 +714,9 @@
       { id: 'refresh', label: '다시 요약', hint: '캐시 무시 · 시간이 걸립니다', icon: 'ti-refresh', run: () => { state.slots = {}; extractAll(true); } },
       { id: 'export', label: '결과 내보내기', hint: 'JSON 저장 (평가용)', icon: 'ti-download', run: () => { $('btnExport').click(); } },
       { id: 'collapse', label: '접기', hint: '알약으로', icon: 'ti-minus', run: () => { state.collapsed = true; } },
-    ];
+      { id: 'notices', label: '알림', hint: '지난 알림 보기', icon: 'ti-bell', run: () => { state.view = 'notices'; } },
+      { id: 'settings', label: '설정', hint: '모델 · 마무리 시각 · 알림 · 캐시', icon: 'ti-settings', run: () => { state.view = 'settings'; } },
+    );
     for (const m of state.models) if (m.id !== state.model) cmds.push({ id: 'model|' + m.id, label: `${shortModel(m.id)}로 전환`, hint: '요약 모델 바꾸기 (교체 시간 몇 초)', icon: 'ti-cpu', run: () => { state.model = m.id; localStorage.setItem('slm-model', state.model); state.slots = {}; extractAll(); } });
     return cmds;
   }
@@ -660,7 +736,7 @@
   function renderPalette() {
     const pal = $('palette'); const q = $('cmd').value.trim();
     if (!state.palette.open) { pal.hidden = true; return; }
-    const cmds = commandList().filter((c) => !q || c.label.toLowerCase().includes(q.toLowerCase()) || (c.hint || '').includes(q)).slice(0, q ? 5 : 4);
+    const cmds = commandList().filter((c) => !q || c.label.toLowerCase().includes(q.toLowerCase()) || (c.hint || '').includes(q)).slice(0, q ? 5 : (state.selected && state.selected.id !== state.selectedDismissed ? 5 : 4));
     const mails = q.length >= 1 ? searchMails(q) : [];
     const items = [...cmds.map((c) => ({ type: 'cmd', c })), ...mails.map((h) => ({ type: 'mail', h }))];
     if (q && !cmds.length) items.push({ type: 'search', q });
@@ -697,6 +773,8 @@
     if (/^(오늘|투데이)(\s*리포트)?$|^리포트$/.test(t)) { state.view = 'report'; state.period = 'today'; }
     else if (/^(이번\s*주|주간)(\s*리포트)?$/.test(t)) { state.view = 'report'; state.period = 'week'; }
     else if (/^(오늘\s*)?마무리$|^퇴근$/.test(t)) { state.view = 'report'; state.period = 'wrap'; }
+    else if (/^(설정|세팅|settings?)$/i.test(t)) { state.view = 'settings'; }
+    else if (/^(알림|알림함)$/.test(t)) { state.view = 'notices'; }
     else if (/^(오늘\s*업무|처음|홈)$/.test(t)) { state.view = 'brief'; state.query = ''; }
     else if (/^(접기|닫기)$/.test(t)) { state.collapsed = true; }
     else if (/^(다시|새로고침|다시\s*요약)$/.test(t)) { state.slots = {}; render(); extractAll(true); return; }
@@ -717,10 +795,13 @@
   });
   $('focusClear').addEventListener('click', () => { state.query = ''; render(); });
   $('orb').addEventListener('click', () => { state.collapsed = !state.collapsed; render(); if (!state.collapsed) $('cmd').focus(); });
-  $('sigMail').addEventListener('click', () => { state.collapsed = false; state.view = 'report'; state.period = 'today'; render(); });
+  $('sigMail').addEventListener('click', () => { state.collapsed = false; state.view = 'report'; state.period = state.settings.defaultReport || 'today'; render(); });
+  $('sigBell').addEventListener('click', () => { state.collapsed = false; state.view = 'notices'; render(); });
+  $('selClear').addEventListener('click', () => { state.selectedDismissed = state.selected ? state.selected.id : ''; render(); });
+  $('seltag').addEventListener('click', (e) => { if (e.target.closest('#selClear') || !state.selected) return; state.collapsed = false; state.view = 'summary'; state.current = state.selected.id; render(); });
   $('queueChip').addEventListener('click', () => { state.collapsed = false; state.view = 'brief'; state.logOpen = true; render(); });
   $('toastClose').addEventListener('click', () => { $('toast').hidden = true; });
-  $('toastBody').addEventListener('click', (e) => { if (e.target.closest('#toastClose')) return; $('toast').hidden = true; state.collapsed = false; if ($('toastBody').dataset.go === 'wrap') { state.view = 'report'; state.period = 'wrap'; delete $('toastBody').dataset.go; } else state.view = 'brief'; render(); });
+  $('toastBody').addEventListener('click', (e) => { if (e.target.closest('#toastClose')) return; $('toast').hidden = true; state.collapsed = false; const go = $('toastBody').dataset.go; if (go === 'wrap') { state.view = 'report'; state.period = 'wrap'; } else if (go === 'week') { state.view = 'report'; state.period = 'week'; } else state.view = 'brief'; if (state.notices[0]) { state.notices[0].read = true; saveNotices(); } render(); });
   document.addEventListener('keydown', (e) => {
     if (e.altKey && e.code === 'Space') { e.preventDefault(); state.collapsed = !state.collapsed; render(); if (!state.collapsed) $('cmd').focus(); return; }
     const typing = ['INPUT', 'TEXTAREA'].includes((e.target || {}).tagName);
@@ -738,12 +819,39 @@
       toast('bell', `메일 ${state.mails.length}통 정리됨`, acts ? `할 일 ${acts}건 · 오늘 업무에서 확인` : '오늘 조치할 것이 없습니다', 8000);
       if (orb) orb.flash('bell', 4000, 'idle');
     }
-    if (now.getHours() * 60 + now.getMinutes() >= 17 * 60 + 30 && localStorage.getItem('slm-wrap') !== key) {
+    const [wh, wm] = (state.settings.wrapTime || '17:30').split(':').map(Number);
+    if (now.getHours() * 60 + now.getMinutes() >= wh * 60 + wm && localStorage.getItem('slm-wrap') !== key) {
       localStorage.setItem('slm-wrap', key);
-      toast('moon', '오늘 마무리 리포트가 준비됐습니다', '클릭하면 남은 것과 내일 기한을 봅니다', 10000);
-      $('toastBody').dataset.go = 'wrap';
+      const r = reportData('today');
+      toast('moon', '오늘 마무리 리포트가 준비됐습니다', r.now.length ? `남은 것 ${r.now.length}건 · 클릭해서 확인` : '남은 것이 없습니다. 내일 기한을 확인하세요', 10000, 'wrap');
       if (orb) orb.flash('bell', 4000, 'idle');
     }
+    if (state.settings.weekly !== false && now.getDay() === 1 && now.getHours() >= 9) {
+      const wk = `${now.getFullYear()}-W${Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 864e5 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7)}`;
+      if (localStorage.getItem('slm-weekly') !== wk && idle && state.mails.length) {
+        localStorage.setItem('slm-weekly', wk);
+        const r = reportData('week');
+        toast('calendar-week', '이번 주 리포트', `해야 할 일 ${r.now.length}건 · 다가오는 기한 ${r.due.length}건`, 10000, 'week');
+        if (orb) orb.flash('cal', 4000, 'idle');
+      }
+    }
+  }
+  // Outlook 에서 선택한 메일 (selected.json, -Panel -Watch 가 5초마다 갱신)
+  async function pollSelected() {
+    if (state.source !== 'inbox') return;
+    try {
+      const r = await fetch('data/selected.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const raw = await r.json();
+      if (!raw) { state.selected = null; render(); return; }
+      const m = normalize(raw, 0);
+      if (state.selected && state.selected.id === m.id) return;
+      state.selected = m; state.selectedDismissed = '';
+      if (!state.mails.some((x) => x.id === m.id)) { state.mails.unshift(m); state.knownIds && state.knownIds.add(m.id); }
+      // 선택한 메일은 사용자가 지금 보고 있는 것 → 대기열 맨 앞
+      if (!state.slots[m.id]) { const c = P.cache.get(m, state.model); if (c) state.slots[m.id] = c; else { const model = state.model; queueAdd({ key: `summary|${model}|${m.id}`, kind: 'summary', mailId: m.id, label: m.subject, run: async () => { state.pending[m.id] = true; render(); try { const s = await P.extract(m, { base: BASE, model, today: state.today }); state.slots[m.id] = s; P.cache.set(m, model, s); if (!s.byRule) state.log.push({ subject: m.subject, model, ms: s.timing.totalMs || 0, ptok: s.timing.promptTokens || 0, tok: s.timing.tokens || 0, at: Date.now() }); } catch (e) {} delete state.pending[m.id]; } }, true); pumpQueue(); } }
+      render();
+    } catch (e) {}
   }
 
   (async function init() {
@@ -759,5 +867,6 @@
     setInterval(async () => { const h2 = await P.health(BASE); const on = !!(h2 && h2.ok); if (on !== state.online) { state.online = on; if (h2 && h2.models.length) state.models = h2.models; renderStatus(); orbState(); } }, 15000);
     setInterval(pollInbox, 60000);   // 리소스 절약: 1분 폴링 (내보내기 주기는 -WatchInterval, 기본 5분)
     setInterval(rhythmTick, 30000); setTimeout(rhythmTick, 5000);
+    setInterval(pollSelected, 5000); setTimeout(pollSelected, 1500);
   })();
 })();

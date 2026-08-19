@@ -51,11 +51,13 @@
             <div class="palette" id="palette" hidden></div>
             <form class="composer" id="composer" autocomplete="off">
               <i class="ti ti-sparkles spark"></i>
-              <span class="focustag" id="focustag" hidden><i class="ti ti-pin"></i><span class="t" id="focusText"></span><button type="button" id="focusClear" aria-label="포커스 해제"><i class="ti ti-x"></i></button></span>
+              <span class="focustag" id="seltag" hidden title="Outlook 에서 선택한 메일"><i class="ti ti-pin"></i><span class="t" id="selText"></span><button type="button" id="selClear" aria-label="선택 해제"><i class="ti ti-x"></i></button></span>
+              <span class="focustag" id="focustag" hidden><i class="ti ti-search"></i><span class="t" id="focusText"></span><button type="button" id="focusClear" aria-label="검색 해제"><i class="ti ti-x"></i></button></span>
               <span class="field"><input id="cmd" placeholder="무엇을 볼까요 — 오늘 리포트 · 이번 주 · 오늘 마무리 · 메일 검색"></span>
               <button type="button" class="qchip" id="queueChip" hidden title="모델 대기열"><i class="ti ti-loader-2"></i><span id="queueText"></span></button>
               <span class="sigs">
                 <button type="button" class="sig" id="sigMail" style="color:var(--sig-mail);background:var(--sig-mail-bg)" title="할 일"><i class="ti ti-mail"></i><span class="sig-badge neutral" id="sigMailBadge">0</span></button>
+                <button type="button" class="sig" id="sigBell" style="color:var(--sig-bell);background:var(--sig-bell-bg)" title="알림"><i class="ti ti-bell"></i><span class="sig-badge neutral" id="sigBellBadge" hidden>0</span></button>
               </span>
               <span class="kbd">⌥Space</span>
             </form>

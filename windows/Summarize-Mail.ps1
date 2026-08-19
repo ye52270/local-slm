@@ -317,6 +317,18 @@ function Select-Relevant {
     return $out
 }
 
+# Outlook 에서 지금 선택한 메일 1통 (패널의 "이 메일 요약" 연동용). 없으면 $null
+function Get-SelectedMail {
+    try {
+        $ol = New-Object -ComObject Outlook.Application
+        $exp = $ol.ActiveExplorer(); if (-not $exp) { return $null }
+        $sel = $exp.Selection; if ($sel.Count -lt 1) { return $null }
+        $m = $sel.Item(1); if ($m.Class -ne 43) { return $null }
+        return [pscustomobject]@{ EntryID = [string]$m.EntryID; Subject = [string]$m.Subject; SenderName = [string]$m.SenderName
+            SenderAddr = (Get-SmtpAddress $m); Received = $m.ReceivedTime.ToString('yyyy-MM-dd HH:mm'); Body = (Clean-Body ([string]$m.Body)) }
+    } catch { return $null }
+}
+
 function Get-Mails {
     try { $ol = New-Object -ComObject Outlook.Application } catch {
         throw "Outlook COM 개체를 만들 수 없습니다. 클래식 Outlook 데스크탑이 설치·실행 중이어야 합니다. ($_)"
@@ -590,9 +602,25 @@ try {
             $KeepServer = $true
             if ($Watch) {
                 # 패널 감시: 주기적으로 받은 편지함을 다시 내보낸다. 패널이 새 메일만 골라 요약하고 오브·말풍선으로 알린다. Ctrl+C 로 종료(서버 유지).
-                Write-Host "· 감시 시작 (주기 $WatchInterval 초, 최근 $Latest 통). 새 메일이 오면 패널이 요약합니다. Ctrl+C 로 종료." -ForegroundColor Green
+                Write-Host "· 감시 시작 (주기 $WatchInterval 초, 최근 $Latest 통 · 선택 메일 5초). 새 메일이 오면 패널이 요약합니다. Ctrl+C 로 종료." -ForegroundColor Green
+                $selOut = Join-Path (Split-Path -Parent $out) 'selected.json'; $lastSel = ''
                 while ($true) {
-                    Start-Sleep -Seconds $WatchInterval
+                    # 선택 메일: 5초마다 확인, 바뀌었을 때만 selected.json 갱신 (패널 팔레트의 "이 메일 요약")
+                    $ticks = [Math]::Max(1, [int]($WatchInterval / 5))
+                    for ($k = 0; $k -lt $ticks; $k++) {
+                        Start-Sleep -Seconds 5
+                        try {
+                            $sm = Get-SelectedMail
+                            $sid = if ($sm) { $sm.EntryID } else { '' }
+                            if ($sid -ne $lastSel) {
+                                $lastSel = $sid
+                                $json2 = if ($sm) { ConvertTo-Json -InputObject ([ordered]@{ id = $sm.EntryID; subject = $sm.Subject; sender_name = $sm.SenderName; sender_addr = $sm.SenderAddr; received = $sm.Received; body = $sm.Body }) -Depth 4 } else { 'null' }
+                                $tmp2 = "$selOut.tmp"
+                                [System.IO.File]::WriteAllText($tmp2, $json2, (New-Object System.Text.UTF8Encoding($false)))
+                                Move-Item -Force $tmp2 $selOut
+                            }
+                        } catch {}
+                    }
                     try {
                         $mails = @(Get-Mails)
                         $arr = $mails | ForEach-Object { [ordered]@{ id = $_.EntryID; subject = $_.Subject; sender_name = $_.SenderName; sender_addr = $_.SenderAddr; received = $_.Received; body = $_.Body } }

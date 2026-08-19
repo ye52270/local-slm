@@ -1,7 +1,9 @@
 # 실제 메일·개인 데이터 (절대 커밋하지 않음)
 /data/
 web/data/inbox.json
+web/data/selected.json
 windows/web/data/inbox.json
+web/data/selected.json
 windows/cache.json
 windows/*.log
 windows/resource-log.csv
