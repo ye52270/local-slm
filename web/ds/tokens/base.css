@@ -1,0 +1,17 @@
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--surface-page);color:var(--text-primary);font-family:var(--font-ui);font-size:var(--fs-body);line-height:var(--lh-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p{margin:0}
+h1,h2,h3,h4{font-weight:var(--weight-semibold);text-wrap:pretty}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--text-link);text-decoration:none}
+a:hover{color:var(--text-link-hover);text-decoration:underline;text-underline-offset:.16em}
+:focus-visible{outline:none;box-shadow:var(--ring)}
+::selection{background:var(--accent-bg);color:var(--text-primary)}
+::-webkit-scrollbar{width:var(--scrollbar-w);height:var(--scrollbar-w)}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.24);background-clip:padding-box}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
+code,kbd,samp{font-family:var(--font-mono);font-size:.92em}
+.tnum{font-variant-numeric:tabular-nums}

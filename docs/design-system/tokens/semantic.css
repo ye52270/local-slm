@@ -1,0 +1,53 @@
+/* Dark is the product. Daylight is a proposal scope, not shipped. */
+:root{
+  --surface-shell:var(--panel);
+  --surface-page:var(--bg);
+  --surface-plate:var(--main-bg);
+  --surface-card:var(--panel);
+  --surface-item:var(--panel-2);
+  --surface-hover:rgba(255,255,255,.06);
+  --surface-active:rgba(255,255,255,.10);
+
+  --text-primary:var(--text);
+  --text-secondary:var(--muted);
+  --text-faint:var(--faint);
+  --text-on-accent:#fff;
+  --text-link:var(--accent);
+  --text-link-hover:#8fb0ff;
+
+  --border-default:var(--border-line);
+  --border-strong:rgba(255,255,255,.14);
+  --border-focus:var(--accent);
+
+  --state-live:var(--ok);
+  --state-urgent:var(--urgent);
+  --state-warn:var(--warn);
+  --state-offline:var(--down);
+
+  --texture-dot:var(--texture-dot-dark);
+  --ring:var(--ring-focus);
+  --scrim:var(--overlay-scrim);
+}
+[data-theme="day"]{
+  --surface-shell:var(--day-card);
+  --surface-page:var(--day-page);
+  --surface-plate:var(--day-card);
+  --surface-card:var(--day-card);
+  --surface-item:var(--day-sunken);
+  --surface-hover:rgba(28,29,33,.04);
+  --surface-active:rgba(28,29,33,.07);
+
+  --text-primary:var(--day-text);
+  --text-secondary:var(--day-muted);
+  --text-faint:var(--day-faint);
+  --text-link:var(--day-accent);
+  --text-link-hover:#2f57ad;
+
+  --border-default:var(--day-border);
+  --border-strong:rgba(28,29,33,.16);
+  --accent:var(--day-accent);
+  --accent-bg:var(--day-accent-bg);
+
+  --texture-dot:var(--texture-dot-light);
+  --scrim:rgba(28,29,33,.42);
+}

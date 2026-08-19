@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Brand — 상태 오브 13종" subtitle="표정 6 + 신호 7. DotMatrixDisplay.cs의 스프라이트를 그대로 씁니다" -->
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>
+*{box-sizing:border-box}body{margin:0;padding:18px 20px;background:#1c1d21;color:#ececee;font-family:var(--font-ui)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:14px 8px}
+.cell{text-align:center}
+.cap{font-size:10.5px;color:#8b9099;margin-top:7px;font-family:var(--font-mono);letter-spacing:.03em}
+.sub{font-size:9.5px;color:#6c6c74;margin-top:2px}
+</style></head><body><div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { OrbLed } = window.DesignSystem_15a016;
+const STATES = [
+  ["idle","평상","유휴"],["grin","채팅","열림·듣는 중"],["look","호버","동공 확장"],
+  ["wink","완료","답변 끝"],["sleepy","졸림","오래 조용"],["sorry","유감","사과"],["ouch","클릭",">_<"],
+  ["mail","메일","새 메일"],["bell","알림","처리할 알림"],["cal","일정","다가온 일정"],
+  ["check","완료","작업 성공"],["clock","작업 중","모래시계"],["heart","칭찬","고마움"]
+];
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div className="grid">
+    {STATES.map(([f,l,s])=>(
+      <div className="cell" key={f}>
+        <OrbLed face={f} size={72} busy={f==='clock'} title={l} />
+        <div className="cap">{l}</div><div className="sub">{s}</div>
+      </div>
+    ))}
+  </div>
+);
+</script></body></html>

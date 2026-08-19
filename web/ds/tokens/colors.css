@@ -1,0 +1,136 @@
+/* 두 가지 구현이 존재합니다.
+   1) WinOrbPoc (WPF / .NET, 로컬 win-agent) — VDI에서 실제로 돌고 있는 상주 프로그램. 이 값이 기준입니다.
+   2) moldubot3 (Electron + React, GitHub) — 같은 제품의 웹 스택 구현. 값이 다르면 (1)을 따릅니다.
+   아래 --wpf-* 블록이 (1) App.xaml / PanelWindow.xaml에서 그대로 가져온 값이고,
+   그 밖의 토큰은 (2) desktop/src/styles/globals.css에서 온 값입니다. */
+:root{
+  /* ── (1) WinOrbPoc — App.xaml + Windows/PanelWindow.xaml ───────────── */
+  --wpf-shell-top:#202530;      /* PanelBackgroundBrush 그라디언트 위 */
+  --wpf-shell-bottom:#191D27;   /* 아래 */
+  --wpf-shell-gradient:linear-gradient(180deg,#202530,#191D27); /* @kind other */
+  --wpf-shell-border:#536078;   /* PanelBorderBrush */
+  --wpf-plate:#1C1D21;          /* 헤더/좌측 판 */
+  --wpf-plate-deep:#18191E;     /* 콘텐츠 판 */
+  --wpf-plate-border:#3B465A;
+  --wpf-card:#242A36;           /* 항목 카드 */
+  --wpf-card-soft:#20232B;      /* 하단 큰 카드 */
+  --wpf-card-border:#53617B;
+  --wpf-chip:#273249;
+  --wpf-chip-border:#526A94;
+  --wpf-composer:#2E394D;
+  --wpf-text:#FAFBFE;           /* PrimaryTextBrush */
+  --wpf-text-2:#CDD6E4;         /* SecondaryTextBrush */
+  --wpf-text-3:#B9C3D3;
+  --wpf-text-4:#C0C8D6;
+  --wpf-text-bright:#F5F7FF;
+  --wpf-mint:#86E0BA;           /* 상태 OK 라벨 */
+  --wpf-caret:#E9F56B;          /* 입력 캐럿 — LED 형광 연노랑 */
+  --wpf-btn:#263044;
+  --wpf-btn-border:#44516B;
+  --wpf-btn-hover:#35415A;
+  --wpf-btn-hover-border:#7386AE;
+  --wpf-btn-press:#151B28;
+  --wpf-btn-primary:#2D5BA1;
+  --wpf-btn-primary-border:#4A89FF;
+  --wpf-scroll-thumb:#586176;
+  --wpf-scroll-thumb-hover:#77839C;
+  --wpf-scroll-thumb-drag:#8FB0FF;
+  --wpf-quote-border:#4A89FF;   /* 인용/근거 좌측 선 */
+  --wpf-code-text:#E9F56B;
+  --wpf-code-bg:#263044;
+
+  /* ── (2) moldubot3 (Electron) ───────────────────────────────────────── */
+  /* Tone A — graphite (default) */
+  --bg:#1c1d21;
+  --panel:#26272c;
+  --panel-2:#2e2f35;
+  --text:#ececee;
+  --muted:#9a9aa2;
+  --faint:#6c6c74;
+  --border-line:rgba(255,255,255,.08);
+  --main-bg:rgba(28,29,33,.92);
+  --glass-surface:linear-gradient(170deg,rgba(46,48,58,.93),rgba(30,31,38,.95)); /* @kind other */
+
+  /* Action + status */
+  --accent:#5b8def;
+  --accent-bg:rgba(91,141,239,.14);
+  --ok:#3ec46d;
+  --down:#e0563b;
+  --warn:#e0a23b;
+  --warn-bg:rgba(224,162,59,.12);
+
+  /* Badge rules (design_handoff 2026-07-07): neutral counts by default, red for one immediate action. */
+  --urgent:#ff4d4a;
+  --urgent-ring:rgba(26,28,33,.9);
+  --badge-neutral-bg:rgba(255,255,255,.18);
+  --badge-neutral-text:#e9ecf1;
+  --badge-neutral-border:rgba(255,255,255,.12);
+
+  /* Result-card urgency tags */
+  --tag-urgent-bg:rgba(255,77,74,.14);
+  --tag-urgent-border:rgba(255,77,74,.3);
+  --tag-urgent-text:#ff8f6b;
+  --tag-follow-bg:rgba(74,137,255,.14);
+  --tag-follow-border:rgba(74,137,255,.3);
+  --tag-follow-text:#8fb0ff;
+
+  /* Progress / agent trace */
+  --step-done:#7cfc5a;
+  --step-active:#e9ecf1;
+  --step-pending:#6b7280;
+  --progress-accent:#4a89ff;
+
+  /* Overlay + detail */
+  --overlay-scrim:rgba(8,10,14,.62);
+  --overlay-card:#22252b;
+  --overlay-highlight-bg:rgba(74,137,255,.1);
+  --overlay-highlight-border:rgba(74,137,255,.22);
+  --overlay-highlight-text:#bcd0ff;
+
+  /* Composer signal buttons — tinted circles, one hue per domain */
+  --sig-cal:#9db4ff;   --sig-cal-bg:rgba(142,168,255,.14);
+  --sig-mail:#f0958a;  --sig-mail-bg:rgba(232,138,125,.14);
+  --sig-todo:#9fe0b4;  --sig-todo-bg:rgba(168,230,184,.14);
+  --sig-bell:#f0c274;  --sig-bell-bg:rgba(232,178,92,.14);
+  --sig-timer:#e8e07a; --sig-timer-bg:rgba(232,224,122,.14);
+
+  /* Orb LED palette — DotMatrixDisplay.cs (WPF) / OrbLed.tsx (Electron)의 도트 색 */
+  --led-inactive:#313437;   /* 꺼진 도트 (alpha .72) */
+  --led-idle:#63e04b;
+  --led-look:#f6c89a;
+  --led-wink:#ffd23e;
+  --led-mail:#ff6b5e;
+  --led-bell:#ffb84d;
+  --led-cal:#7da2ff;
+  --led-check:#46c878;
+  --led-rain:#5fb6ff;
+  --led-heart:#ff6b8a;
+  --led-clock:#e9f56b;
+  --led-white:#f2ede4;
+  --led-dim:#565b63;
+  --led-panel:#0b0c0f;
+
+  /* Siri glow — listening / working ring on the launcher edge, and the orb rim */
+  --siri-conic:conic-gradient(from 0deg,#4a89ff,#7c5cff,#ff4d9d,#ffb84a,#4ad6c8,#4a89ff); /* @kind other */
+  --siri-outer-glow:rgba(124,92,255,.28);
+
+  /* Daylight surfaces (proposal — no light theme ships today) */
+  --day-page:#F2F3F5;
+  --day-card:#FFFFFF;
+  --day-sunken:#F7F8FA;
+  --day-text:#1c1d21;
+  --day-muted:#6b7280;
+  --day-faint:#9aa0aa;
+  --day-border:rgba(28,29,33,.10);
+  --day-accent:#3f6fd8;
+  --day-accent-bg:rgba(63,111,216,.10);
+}
+/* Tone B — warm graphite. Toggled in-app with "/톤". Structure unchanged, variables only. */
+html[data-tone="warm"]{
+  --bg:#211f1b;
+  --panel:#2a2723;
+  --panel-2:#322f2a;
+  --border-line:rgba(255,250,240,.08);
+  --glass-surface:linear-gradient(170deg,rgba(56,52,46,.93),rgba(36,34,30,.95)); /* @kind other */
+  --main-bg:rgba(33,31,27,.92);
+}

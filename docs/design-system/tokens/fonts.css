@@ -1,0 +1,12 @@
+/* 몰두봇 uses the OS UI font — no webfont for text. Matches desktop/src/styles/globals.css. */
+/* Icons: Tabler Icons webfont 3.30.0, loaded from jsDelivr exactly as desktop/index.html does. */
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css');
+:root{
+  /* WinOrbPoc이 창마다 지정하는 순서 그대로: 맑은 고딕이 먼저입니다
+     (OrbNotificationWindow.xaml: "Malgun Gothic, Segoe UI Variable Text, Segoe UI").
+     모두 OS가 제공하는 폰트 — 이 시스템은 폰트 파일을 싣지 않고, 다른 가족으로 치환하지도 않습니다. */
+  --font-ui:"Malgun Gothic","Segoe UI Variable Text","Segoe UI",-apple-system,"Apple SD Gothic Neo",sans-serif;
+  /* Cascadia Mono / Segoe UI Mono are likewise OS-provided (Windows 11 default mono). */
+  --font-mono:ui-monospace,"Cascadia Mono","Segoe UI Mono","SFMono-Regular",Menlo,monospace;
+  /* Icons are used as classes (<i class="ti ti-mail">), not through a font token. */
+}

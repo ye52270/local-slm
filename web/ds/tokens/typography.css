@@ -1,0 +1,26 @@
+:root{
+  /* System sans, weight-driven. Sizes are the shipping app's (globals.css):
+     composer 16, narration/tables 14, card titles 13.5, body+chips 13, meta 12, micro 11, badge 9.5. */
+  --fs-input:16px;
+  --fs-answer:14px;
+  --fs-card-title:13.5px;
+  --fs-body:13px;
+  --fs-meta:12px;
+  --fs-micro:11px;
+  --fs-badge:9.5px;
+  --fs-h1:22px;
+  --fs-h2:15px;
+  --fs-numeral:26px;
+
+  --lh-tight:1.28;  /* @kind font */
+  --lh-snug:1.45;   /* @kind font */
+  --lh-body:1.6;    /* @kind font */
+
+  --ls-tight:-.02em; /* @kind font */
+  --ls-mono:.06em;   /* @kind font */
+
+  --weight-regular:400;  /* @kind font */
+  --weight-medium:500;   /* @kind font */
+  --weight-semibold:600; /* @kind font */
+  --weight-bold:700;     /* @kind font */
+}

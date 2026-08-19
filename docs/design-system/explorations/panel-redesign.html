@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="design_doc_mode" content="canvas">
+<title>몰두봇 패널 UI 시안 — B / C / D</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+body{background:#141518;font-family:var(--font-ui)}
+.frame{position:absolute}
+.col-title{font-size:20px;font-weight:600;color:#ececee;letter-spacing:-.02em}
+.col-sub{font-size:13px;color:#9a9aa2;margin-top:6px;max-width:520px;line-height:1.6}
+.tag{display:inline-block;white-space:nowrap;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;color:#6c6c74;border:0.5px solid rgba(255,255,255,.14);border-radius:4px;padding:3px 7px;margin-bottom:12px}
+.desk{padding:24px;border-radius:16px;background:#25272c;background-image:var(--texture-dot-dark);background-size:14px 14px}
+.desk-day{background:#dfe2e7;background-image:radial-gradient(rgba(28,29,33,.10) .75px,transparent .75px);background-size:14px 14px}
+.cap{font-size:11.5px;color:#767b87;margin:10px 2px 0}
+.notes{width:520px;font-size:13px;line-height:1.75;color:#9a9aa2}
+.notes b{color:#ececee;font-weight:600}
+.notes ul{margin:8px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.notes li{position:relative;padding-left:20px}
+.notes li::before{content:"—";color:#565b63;position:absolute;left:0;top:0}
+
+/* ── shared panel skeleton (identical markup in all three) ───────────── */
+.p{width:520px;display:flex;flex-direction:column;overflow:hidden;font-size:13px;position:relative}
+.p .status{display:flex;align-items:center;gap:7px;padding:10px 16px 9px;font-size:10.5px;color:var(--pm)}
+.p .status .dot{width:6px;height:6px;border-radius:50%;background:#3ec46d;flex:none;box-shadow:0 0 0 2px rgba(62,196,109,.18)}
+.p .status .model{flex:0 1 auto;min-width:0;font-family:var(--font-mono);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p .status .when{margin-left:auto;white-space:nowrap;color:var(--pf)}
+.p .main{display:flex;flex-direction:column;gap:14px;padding:14px 16px 16px}
+.p .head{display:flex;align-items:baseline;gap:10px}
+.p .head h1{font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--pt);white-space:nowrap}
+.p .counts{margin-left:auto;display:flex;gap:6px;flex:none}
+.p .cnt{flex:none;white-space:nowrap;display:flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:var(--r-chip);font-size:11.5px;color:var(--pm);background:var(--cnt-bg);border:0.5px solid var(--cnt-bd)}
+.p .cnt b{font-weight:600;font-family:var(--font-mono);font-size:11px;color:var(--pt)}
+.p .cnt.urgent{color:#ff8f6b;background:var(--tag-urgent-bg);border-color:var(--tag-urgent-border)}
+.p .cnt.urgent b{color:#ff8f6b}
+
+.p .hero{border-radius:var(--r-card);padding:13px 14px;background:var(--hero-bg);border:var(--hero-bd)}
+.p .hero .kick{display:flex;align-items:center;gap:6px;font-size:11px;color:#ff8f6b;margin-bottom:7px;white-space:nowrap}
+.p .hero .kick .num{font-family:var(--font-mono);letter-spacing:.04em}
+.p .hero h2{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--pt);letter-spacing:-.01em}
+.p .hero .src{font-size:11.5px;color:var(--pf);margin-top:5px}
+.p .acts{display:flex;align-items:center;gap:7px;margin-top:12px}
+.p .btn{height:28px;padding:0 12px;border-radius:var(--r-btn);border:0.5px solid var(--btn-bd);background:var(--btn-bg);color:var(--pm);font-size:12.5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;transition:var(--transition-control)}
+.p .btn:hover{background:var(--btn-hover);color:var(--pt)}
+.p .btn.primary{background:var(--accent);border-color:transparent;color:#fff;font-weight:500}
+.p .btn.primary:hover{filter:brightness(1.08)}
+.p .btn.ghost{background:transparent;border-color:transparent;color:var(--pf);padding:0 6px}
+.p .btn.ghost:hover{color:var(--pm);background:var(--btn-hover)}
+.p .btn[disabled]{opacity:.45;cursor:default}
+.p .btn .ti{font-size:14px}
+.p .soon{font-size:10.5px;color:var(--pf);font-family:var(--font-mono);letter-spacing:.04em;margin-left:2px}
+
+.p .sect{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--pf)}
+.p .sect .line{flex:1;height:0.5px;background:var(--rule)}
+.p .sect .n{font-family:var(--font-mono);font-size:11px}
+.p .row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-item);background:var(--item-bg);border:var(--item-bd)}
+.p .row .txt{min-width:0;flex:1}
+.p .row .t{font-size:13px;color:var(--pt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p .row .m{font-size:11.5px;color:var(--pf);margin-top:3px}
+
+.p .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p .colhd{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--pf);margin-bottom:7px}
+.p .colhd .n{font-family:var(--font-mono);font-size:11px}
+.p .item{display:flex;gap:9px;padding:8px 10px;border-radius:var(--r-item);background:var(--item-bg);border:var(--item-bd);margin-bottom:6px}
+.p .item .bar{width:3px;border-radius:2px;background:var(--bar);flex:none}
+.p .item .t{font-size:12.5px;color:var(--pt);line-height:1.35}
+.p .item .txt{min-width:0;flex:1}
+.p .colhd span{white-space:nowrap}
+.p .item .m{font-size:11px;color:var(--pf);margin-top:3px;display:flex;gap:6px;align-items:center}
+.p .item .time{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--pm);align-self:center}
+.p .late{color:#ff8f6b;font-family:var(--font-mono);font-size:10.5px}
+.p .more{width:100%;height:26px;border-radius:var(--r-btn);border:0.5px dashed var(--rule);background:transparent;color:var(--pf);font-size:11.5px;cursor:pointer}
+.p .more:hover{color:var(--pm);border-color:var(--btn-bd)}
+
+.p .composer{display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:0.5px solid var(--rule)}
+.p .composer .spark{color:var(--pf);font-size:16px}
+.p .composer .ph{flex:1;font-size:15px;color:var(--pf)}
+.p .composer .caret{display:inline-block;width:1.5px;height:17px;background:#e9f56b;vertical-align:-3px;margin-right:1px}
+.p .composer .mic{color:#7787a8;font-size:17px}
+.p .composer .kbd{font-family:var(--font-mono);font-size:10px;color:var(--pf);border:0.5px solid var(--rule);border-radius:4px;padding:2px 5px}
+
+/* ── B: 계기판 (instrument) ──────────────────────────────────────────── */
+.dir-b{--pt:#ececee;--pm:#9a9aa2;--pf:#6c6c74;--rule:rgba(255,255,255,.09);
+  --r-card:8px;--r-item:6px;--r-btn:6px;--r-chip:6px;
+  --cnt-bg:transparent;--cnt-bd:rgba(255,255,255,.12);
+  --hero-bg:rgba(255,255,255,.03);--hero-bd:0.5px solid rgba(255,255,255,.12);
+  --item-bg:transparent;--item-bd:0;--bar:#5b8def;
+  --btn-bg:transparent;--btn-bd:rgba(255,255,255,.16);--btn-hover:rgba(255,255,255,.06);
+  background:#1c1d21;border-radius:14px 14px 30px 30px;box-shadow:inset 0 1px 1px rgba(255,255,255,.10)}
+.dir-b .status{background:#17181b;border-bottom:0.5px solid rgba(255,255,255,.07)}
+.dir-b .hero{background-image:var(--texture-dot-dark);background-size:6px 6px}
+.dir-b .hero .kick{font-family:var(--font-mono);letter-spacing:.06em;font-size:10px;text-transform:uppercase}
+.dir-b .item{border-left:3px solid var(--bar);border-radius:0 6px 6px 0;padding-left:9px}
+.dir-b .item .bar{display:none}
+.dir-b .item.todo{border-left-color:#9fe0b4}
+.dir-b .row{border-left:3px solid rgba(255,255,255,.14);border-radius:0 6px 6px 0}
+.dir-b .colhd{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── C: 유리/아크릴 (glass) ──────────────────────────────────────────── */
+.dir-c{--pt:#f2f3f6;--pm:#a8adb8;--pf:#767b87;--rule:rgba(255,255,255,.10);
+  --r-card:14px;--r-item:12px;--r-btn:14px;--r-chip:16px;
+  --cnt-bg:rgba(255,255,255,.07);--cnt-bd:rgba(255,255,255,.10);
+  --hero-bg:rgba(91,141,239,.13);--hero-bd:0.5px solid rgba(91,141,239,.32);
+  --item-bg:rgba(255,255,255,.05);--item-bd:0.5px solid rgba(255,255,255,.07);--bar:#5b8def;
+  --btn-bg:rgba(255,255,255,.07);--btn-bd:rgba(255,255,255,.12);--btn-hover:rgba(255,255,255,.14);
+  background:var(--glass-surface);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-radius:20px 20px 44px 44px;box-shadow:inset 0 1px 1px rgba(255,255,255,.14)}
+.dir-c .main{background:rgba(24,26,32,.55)}
+.dir-c .item.todo{--bar:#9fe0b4}
+.dir-c .composer{background:transparent}
+
+/* ── D: 라이트 (daylight) ────────────────────────────────────────────── */
+.dir-d{--pt:#1c1d21;--pm:#5b616c;--pf:#8b9099;--rule:rgba(28,29,33,.10);
+  --r-card:12px;--r-item:10px;--r-btn:8px;--r-chip:14px;
+  --cnt-bg:#f3f5f8;--cnt-bd:rgba(28,29,33,.10);
+  --hero-bg:#fff;--hero-bd:1px solid rgba(63,111,216,.35);
+  --item-bg:#f7f8fa;--item-bd:0.5px solid rgba(28,29,33,.07);--bar:#3f6fd8;
+  --btn-bg:#fff;--btn-bd:rgba(28,29,33,.16);--btn-hover:#f1f3f7;
+  --accent:#3f6fd8;
+  background:#fff;border-radius:16px 16px 40px 40px;box-shadow:0 20px 48px -18px rgba(20,24,35,.45),0 0 0 1px rgba(28,29,33,.08)}
+.dir-d .status{background:#f7f8fa;border-bottom:1px solid rgba(28,29,33,.07)}
+.dir-d .status .dot{background:#2fa85a;box-shadow:0 0 0 2px rgba(47,168,90,.16)}
+.dir-d .hero{box-shadow:0 2px 8px -4px rgba(20,24,35,.18)}
+.dir-d .hero .kick{color:#d1503a}
+.dir-d .cnt.urgent{color:#c0442f;background:rgba(224,86,59,.10);border-color:rgba(224,86,59,.30)}
+.dir-d .cnt.urgent b{color:#c0442f}
+.dir-d .late{color:#c0442f}
+.dir-d .item.todo{--bar:#3d9e6b}
+.dir-d .composer .mic{color:#7c8494}
+.dir-d .composer .caret{background:#3f6fd8}
+
+/* ── collapsed bar ───────────────────────────────────────────────────── */
+.pill{width:520px;min-height:88px;display:flex;flex-direction:row;align-items:center;gap:10px;padding:0 20px}
+.pill .ph{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .ph{flex:1;font-size:16px}
+.pill .sig{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;position:relative}
+.pill .sig i{line-height:1}
+.pill .badge{position:absolute;top:-4px;right:-5px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700}
+.pill .badge.neutral{background:var(--badge-neutral-bg);color:var(--badge-neutral-text);border:1px solid var(--badge-neutral-border)}
+.pill .badge.urgent{background:var(--urgent);color:#fff;box-shadow:0 0 0 2px var(--urgent-ring)}
+.dir-b.pill{border-radius:16px}
+.dir-c.pill{border-radius:44px}
+.dir-d.pill{border-radius:44px}
+.dir-d .badge.neutral{background:#e6e9ee;color:#3c424c;border-color:rgba(28,29,33,.10)}
+
+/* ── orb ─────────────────────────────────────────────────────────────── */
+.orbs{display:flex;gap:26px;align-items:flex-start}
+.orb-c{text-align:center;width:88px}
+.orb{width:80px;height:80px;border-radius:50%;position:relative;padding:3px;box-shadow:var(--shadow-orb)}
+.orb .panel-led{position:absolute;inset:3px;border-radius:50%;overflow:hidden;background:#0b0c0f}
+.orb canvas{display:block;width:100%;height:100%}
+.orb .gloss{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 22%,rgba(255,255,255,.13),rgba(255,255,255,0) 40%)}
+.orb-lbl{font-size:11px;color:#8b9099;margin-top:9px;font-family:var(--font-mono);letter-spacing:.04em}
+.rim-iris{background:var(--siri-conic)}
+.rim-mono{background:conic-gradient(from 210deg,#3a3e46,#5b8def,#3a3e46,#2c2f36,#3a3e46)}
+.rim-glass{background:linear-gradient(160deg,rgba(255,255,255,.55),rgba(255,255,255,.06) 45%,rgba(91,141,239,.5))}
+.rim-day{background:linear-gradient(160deg,#ffffff,#c9cfda 55%,#9aa3b4);box-shadow:0 8px 20px -8px rgba(20,24,35,.4)}
+</style>
+</head>
+<body>
+
+<div class="frame" style="left:60px;top:40px;width:1900px">
+  <div class="col-title" style="font-size:26px">몰두봇 패널 — 방향 시안 3종</div>
+  <div class="col-sub" style="max-width:1000px">모두 같은 화면(오늘 업무 브리핑)·같은 문구를 씁니다. 다른 것은 표면 처리와 밀도뿐이라 직접 비교할 수 있습니다. 폭 520px = 06-ui-spec.md의 런처 실제 폭. 아이콘은 앱과 같은 Tabler webfont 3.30.0.</div>
+</div>
+
+<!-- ═══ B ═══════════════════════════════════════════════════════════ -->
+<div class="frame" style="left:60px;top:140px;width:560px">
+  <div class="tag">시안 B</div>
+  <div class="col-title">계기판</div>
+  <div class="col-sub">오브의 LED·도트 감성을 패널로 확장. 카드를 겹치지 않고 얇은 선과 좌측 상태바로 구획합니다. 숫자는 전부 모노 — 시간·건수·지연일이 한눈에 정렬됩니다.</div>
+</div>
+<div class="frame" style="left:60px;top:300px">
+  <div class="desk">
+    <div class="orbs">
+      <div class="orb-c"><div class="orb rim-mono"><div class="panel-led"><canvas data-face="idle" data-color="#63e04b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">평상</div></div>
+      <div class="orb-c"><div class="orb rim-mono"><div class="panel-led"><canvas data-face="mail" data-color="#ff6b5e" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">새 메일</div></div>
+      <div class="orb-c"><div class="orb rim-mono"><div class="panel-led"><canvas data-face="clock" data-color="#e9f56b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">작업 중</div></div>
+    </div>
+  </div>
+  <div class="cap">오브 80px · 림을 단색 메탈로 정리 (무지개 → 톤 통일)</div>
+</div>
+
+<div class="frame" style="left:60px;top:520px">
+  <div class="desk">
+    <div class="p dir-b pill">
+      <i class="ti ti-sparkles" style="color:#6c6c74;font-size:17px"></i>
+      <div class="ph" style="color:#6c6c74"><span class="caret" style="background:#e9f56b"></span>확인하거나 실행할 업무를 입력하세요...</div>
+      <div class="sig" style="color:#f0958a;background:rgba(232,138,125,.14)"><i class="ti ti-mail"></i><span class="badge urgent">1</span></div>
+      <div class="sig" style="color:#f0c274;background:rgba(232,178,92,.14)"><i class="ti ti-bell"></i><span class="badge neutral">6</span></div>
+      <i class="ti ti-microphone" style="color:#7787a8;font-size:17px"></i>
+    </div>
+  </div>
+  <div class="cap">접힘 520×88 · 빨강 뱃지는 '즉시 조치 1건'에만</div>
+</div>
+
+<div class="frame" style="left:60px;top:700px">
+  <div class="desk">
+    <div class="p dir-b">
+      <div class="status"><span class="dot"></span><span class="model">Local SLM · Qwen3.5-4B-Q4_K_M · 16K</span><span class="when">8월 15일 토요일</span></div>
+      <div class="main">
+        <div class="head">
+          <h1>오늘 업무</h1>
+          <div class="counts">
+            <span class="cnt">일정 <b>1</b></span>
+            <span class="cnt">할 일 <b>2</b></span>
+            <span class="cnt">후속 <b>6</b></span>
+            <span class="cnt urgent">지연 <b>8</b></span>
+          </div>
+        </div>
+        <div class="hero">
+          <div class="kick"><i class="ti ti-flag-2"></i>추천 액션<span class="num">· 지연 8-12</span></div>
+          <h2>재발송 : [월보] 2026-07 월간운영 보고</h2>
+          <div class="src">원본 · 플래그 메일</div>
+          <div class="acts">
+            <button class="btn primary"><i class="ti ti-pencil"></i>답장 초안 만들기</button>
+            <button class="btn"><i class="ti ti-mail-opened"></i>후속 메일 열기</button>
+            <button class="btn ghost">나중에</button>
+            <span class="soon" style="margin-left:auto">준비 중</span>
+          </div>
+        </div>
+        <div>
+          <div class="sect" style="margin-bottom:8px">다른 항목 추천<span class="line"></span><span class="n">1</span></div>
+          <div class="row">
+            <div class="txt">
+              <div class="t">[보안운영] 내부 구성원 간 개인정보 메일 차단 관련 진행 상황 확인</div>
+              <div class="m">지연 메일 확인 · 원본 · 플래그 메일</div>
+            </div>
+            <button class="btn">메일 열기</button>
+          </div>
+        </div>
+        <div class="cols">
+          <div>
+            <div class="colhd"><span>오늘 일정</span><span class="n">1</span></div>
+            <div class="item"><div class="txt"><div class="t">금호생명 암보험 인출</div><div class="m">10:00–10:00</div></div><span class="time">10:00</span></div>
+          </div>
+          <div>
+            <div class="colhd"><span>할 일</span><span class="n">2</span></div>
+            <div class="item todo"><div class="txt"><div class="t">SSO Oracle 암호 변경</div><div class="m">Outlook 작업 <span class="late">지연 2-24</span></div></div></div>
+            <div class="item todo"><div class="txt"><div class="t">그룹메일 주소 생성</div><div class="m">Outlook 작업</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <i class="ti ti-sparkles spark"></i>
+        <div class="ph"><span class="caret"></span>확인하거나 실행할 업무를 입력하세요...</div>
+        <span class="kbd">⌥Space</span>
+        <i class="ti ti-microphone mic"></i>
+      </div>
+    </div>
+  </div>
+  <div class="cap">펼침 520×약 560 · 잘림 없이 한 화면</div>
+</div>
+
+<div class="frame" style="left:60px;top:1420px">
+  <div class="notes">
+    <b>이 방향의 성격</b>
+    <ul>
+      <li>선 하나로 구획 — 카드 3중 중첩이 사라져 깊이가 2단으로 줄어듭니다</li>
+      <li>숫자는 전부 모노·탭ular — 10:00, 지연 8-12, 건수가 세로로 정렬</li>
+      <li>도트 질감은 추천 액션 카드에만 — 오브와 같은 재질</li>
+      <li>가장 정보 밀도가 높고, 가장 '도구'처럼 보입니다</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ C ═══════════════════════════════════════════════════════════ -->
+<div class="frame" style="left:720px;top:140px;width:560px">
+  <div class="tag">시안 C</div>
+  <div class="col-title">유리 / 아크릴</div>
+  <div class="col-sub">지금 코드에 이미 있는 글래스 표면(--glass-surface, 20/20/44/44 라운드)을 끝까지 밀어붙인 안. 뒤 배경이 비쳐 '떠 있는 창'으로 읽히고, 카드는 흰색 4~7% 틴트로만 구분합니다.</div>
+</div>
+<div class="frame" style="left:720px;top:300px">
+  <div class="desk">
+    <div class="orbs">
+      <div class="orb-c"><div class="orb rim-glass"><div class="panel-led"><canvas data-face="idle" data-color="#63e04b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">평상</div></div>
+      <div class="orb-c"><div class="orb rim-glass"><div class="panel-led"><canvas data-face="mail" data-color="#ff6b5e" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">새 메일</div></div>
+      <div class="orb-c"><div class="orb rim-iris" style="opacity:.9"><div class="panel-led"><canvas data-face="clock" data-color="#e9f56b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl">작업 중</div></div>
+    </div>
+  </div>
+  <div class="cap">무지개 링은 '작업 중'일 때만 — 평소엔 유리 림</div>
+</div>
+
+<div class="frame" style="left:720px;top:520px">
+  <div class="desk">
+    <div class="p dir-c pill">
+      <i class="ti ti-sparkles" style="color:#767b87;font-size:17px"></i>
+      <div class="ph" style="color:#767b87"><span class="caret" style="background:#e9f56b"></span>확인하거나 실행할 업무를 입력하세요...</div>
+      <div class="sig" style="color:#f0958a;background:rgba(232,138,125,.14)"><i class="ti ti-mail"></i><span class="badge urgent">1</span></div>
+      <div class="sig" style="color:#f0c274;background:rgba(232,178,92,.14)"><i class="ti ti-bell"></i><span class="badge neutral">6</span></div>
+      <i class="ti ti-microphone" style="color:#7787a8;font-size:17px"></i>
+    </div>
+  </div>
+  <div class="cap">접힘 = 완전 알약 44px · 오브와 같은 높이</div>
+</div>
+
+<div class="frame" style="left:720px;top:700px">
+  <div class="desk">
+    <div class="p dir-c">
+      <div class="status"><span class="dot"></span><span class="model">Local SLM · Qwen3.5-4B-Q4_K_M · 16K</span><span class="when">8월 15일 토요일</span></div>
+      <div class="main">
+        <div class="head">
+          <h1>오늘 업무</h1>
+          <div class="counts">
+            <span class="cnt">일정 <b>1</b></span>
+            <span class="cnt">할 일 <b>2</b></span>
+            <span class="cnt">후속 <b>6</b></span>
+            <span class="cnt urgent">지연 <b>8</b></span>
+          </div>
+        </div>
+        <div class="hero">
+          <div class="kick"><i class="ti ti-flag-2"></i>추천 액션<span class="num">· 지연 8-12</span></div>
+          <h2>재발송 : [월보] 2026-07 월간운영 보고</h2>
+          <div class="src">원본 · 플래그 메일</div>
+          <div class="acts">
+            <button class="btn primary"><i class="ti ti-pencil"></i>답장 초안 만들기</button>
+            <button class="btn"><i class="ti ti-mail-opened"></i>후속 메일 열기</button>
+            <button class="btn ghost">나중에</button>
+            <span class="soon" style="margin-left:auto">준비 중</span>
+          </div>
+        </div>
+        <div>
+          <div class="sect" style="margin-bottom:8px">다른 항목 추천<span class="line"></span><span class="n">1</span></div>
+          <div class="row">
+            <div class="txt">
+              <div class="t">[보안운영] 내부 구성원 간 개인정보 메일 차단 관련 진행 상황 확인</div>
+              <div class="m">지연 메일 확인 · 원본 · 플래그 메일</div>
+            </div>
+            <button class="btn">메일 열기</button>
+          </div>
+        </div>
+        <div class="cols">
+          <div>
+            <div class="colhd"><span>오늘 일정</span><span class="n">1</span></div>
+            <div class="item"><div class="bar"></div><div class="txt"><div class="t">금호생명 암보험 인출</div><div class="m">10:00–10:00</div></div><span class="time">10:00</span></div>
+          </div>
+          <div>
+            <div class="colhd"><span>할 일</span><span class="n">2</span></div>
+            <div class="item todo"><div class="bar"></div><div class="txt"><div class="t">SSO Oracle 암호 변경</div><div class="m">Outlook 작업 <span class="late">지연 2-24</span></div></div></div>
+            <div class="item todo"><div class="bar"></div><div class="txt"><div class="t">그룹메일 주소 생성</div><div class="m">Outlook 작업</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <i class="ti ti-sparkles spark"></i>
+        <div class="ph"><span class="caret"></span>확인하거나 실행할 업무를 입력하세요...</div>
+        <span class="kbd">⌥Space</span>
+        <i class="ti ti-microphone mic"></i>
+      </div>
+    </div>
+  </div>
+  <div class="cap">펼침 · 상단 20px / 하단 44px 라운드 유지</div>
+</div>
+
+<div class="frame" style="left:720px;top:1420px">
+  <div class="notes">
+    <b>이 방향의 성격</b>
+    <ul>
+      <li>Windows 11 Mica와 이질감이 없고, 지금 코드에서 가장 적은 변경으로 도달</li>
+      <li>블러 뒤 배경이 비쳐 화면을 덜 가로막는 느낌 — 상주형에 유리</li>
+      <li>대신 뒤 배경이 밝으면 대비가 떨어져 본문은 55% 불투명 판 위에 올렸습니다</li>
+      <li>WPF/WinUI라면 AcrylicBrush로 바로 대응됩니다</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ D ═══════════════════════════════════════════════════════════ -->
+<div class="frame" style="left:1380px;top:140px;width:560px">
+  <div class="tag">시안 D</div>
+  <div class="col-title">라이트</div>
+  <div class="col-sub">Outlook·Word 옆에 놓았을 때 튀지 않는 안. 흰 종이 위 얇은 선, 색은 파랑(액션)과 주황(지연) 둘뿐. 오브는 LED 화면을 그대로 두고 림만 밝게 바꿔 정체성을 유지합니다.</div>
+</div>
+<div class="frame" style="left:1380px;top:300px">
+  <div class="desk desk-day">
+    <div class="orbs">
+      <div class="orb-c"><div class="orb rim-day"><div class="panel-led"><canvas data-face="idle" data-color="#63e04b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl" style="color:#5b616c">평상</div></div>
+      <div class="orb-c"><div class="orb rim-day"><div class="panel-led"><canvas data-face="mail" data-color="#ff6b5e" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl" style="color:#5b616c">새 메일</div></div>
+      <div class="orb-c"><div class="orb rim-day"><div class="panel-led"><canvas data-face="clock" data-color="#e9f56b" width="148" height="148"></canvas></div><div class="gloss"></div></div><div class="orb-lbl" style="color:#5b616c">작업 중</div></div>
+    </div>
+  </div>
+  <div class="cap">LED 패널은 검정 유지 — 밝은 배경에서도 얼굴이 읽힘</div>
+</div>
+
+<div class="frame" style="left:1380px;top:520px">
+  <div class="desk desk-day">
+    <div class="p dir-d pill">
+      <i class="ti ti-sparkles" style="color:#8b9099;font-size:17px"></i>
+      <div class="ph" style="color:#8b9099"><span class="caret" style="background:#3f6fd8"></span>확인하거나 실행할 업무를 입력하세요...</div>
+      <div class="sig" style="color:#c25a4a;background:rgba(224,86,59,.10)"><i class="ti ti-mail"></i><span class="badge urgent">1</span></div>
+      <div class="sig" style="color:#a97a2a;background:rgba(224,162,59,.12)"><i class="ti ti-bell"></i><span class="badge neutral">6</span></div>
+      <i class="ti ti-microphone" style="color:#7c8494;font-size:17px"></i>
+    </div>
+  </div>
+  <div class="cap">접힘 · 그림자로만 떠 있음을 표현</div>
+</div>
+
+<div class="frame" style="left:1380px;top:700px">
+  <div class="desk desk-day">
+    <div class="p dir-d">
+      <div class="status"><span class="dot"></span><span class="model">Local SLM · Qwen3.5-4B-Q4_K_M · 16K</span><span class="when">8월 15일 토요일</span></div>
+      <div class="main">
+        <div class="head">
+          <h1>오늘 업무</h1>
+          <div class="counts">
+            <span class="cnt">일정 <b>1</b></span>
+            <span class="cnt">할 일 <b>2</b></span>
+            <span class="cnt">후속 <b>6</b></span>
+            <span class="cnt urgent">지연 <b>8</b></span>
+          </div>
+        </div>
+        <div class="hero">
+          <div class="kick"><i class="ti ti-flag-2"></i>추천 액션<span class="num">· 지연 8-12</span></div>
+          <h2>재발송 : [월보] 2026-07 월간운영 보고</h2>
+          <div class="src">원본 · 플래그 메일</div>
+          <div class="acts">
+            <button class="btn primary"><i class="ti ti-pencil"></i>답장 초안 만들기</button>
+            <button class="btn"><i class="ti ti-mail-opened"></i>후속 메일 열기</button>
+            <button class="btn ghost">나중에</button>
+            <span class="soon" style="margin-left:auto">준비 중</span>
+          </div>
+        </div>
+        <div>
+          <div class="sect" style="margin-bottom:8px">다른 항목 추천<span class="line"></span><span class="n">1</span></div>
+          <div class="row">
+            <div class="txt">
+              <div class="t">[보안운영] 내부 구성원 간 개인정보 메일 차단 관련 진행 상황 확인</div>
+              <div class="m">지연 메일 확인 · 원본 · 플래그 메일</div>
+            </div>
+            <button class="btn">메일 열기</button>
+          </div>
+        </div>
+        <div class="cols">
+          <div>
+            <div class="colhd"><span>오늘 일정</span><span class="n">1</span></div>
+            <div class="item"><div class="bar"></div><div class="txt"><div class="t">금호생명 암보험 인출</div><div class="m">10:00–10:00</div></div><span class="time">10:00</span></div>
+          </div>
+          <div>
+            <div class="colhd"><span>할 일</span><span class="n">2</span></div>
+            <div class="item todo"><div class="bar"></div><div class="txt"><div class="t">SSO Oracle 암호 변경</div><div class="m">Outlook 작업 <span class="late">지연 2-24</span></div></div></div>
+            <div class="item todo"><div class="bar"></div><div class="txt"><div class="t">그룹메일 주소 생성</div><div class="m">Outlook 작업</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <i class="ti ti-sparkles spark"></i>
+        <div class="ph"><span class="caret"></span>확인하거나 실행할 업무를 입력하세요...</div>
+        <span class="kbd">⌥Space</span>
+        <i class="ti ti-microphone mic"></i>
+      </div>
+    </div>
+  </div>
+  <div class="cap">펼침 · 업무 문서 옆에서 가장 조용함</div>
+</div>
+
+<div class="frame" style="left:1380px;top:1420px">
+  <div class="notes">
+    <b>이 방향의 성격</b>
+    <ul>
+      <li>VDI의 밝은 Outlook 화면 옆에서 눈부심 차이가 없음</li>
+      <li>색이 둘뿐이라 '지연 8'이 화면에서 유일하게 붉은 것 = 시선이 거기로 갑니다</li>
+      <li>다크는 유지하고 라이트를 추가하는 구조 (테마 토큰만 교체)</li>
+      <li>대신 야간·어두운 사무실에서는 다크보다 피로합니다</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ 공통 개선 ═══════════════════════════════════════════════════ -->
+<div class="frame" style="left:60px;top:1660px;width:1840px">
+  <div class="notes" style="width:1840px">
+    <b>세 시안에 공통으로 적용한 수정</b>
+    <ul style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 40px">
+      <li><b>겹침 제거</b> — '준비 중'을 버튼 위 라벨이 아니라 액션 행 오른쪽 끝의 상태 텍스트로 분리. 버튼 3개는 높이 28px·한 줄·왼쪽 정렬로 통일</li>
+      <li><b>잘림 제거</b> — 할 일 2건이 모두 보이도록 항목 높이를 줄이고, 넘칠 때는 잘리는 대신 '+N건 더'로 접습니다</li>
+      <li><b>우선순위</b> — 추천 액션 1건만 카드로 띄우고 나머지는 행으로 강등. 제목은 22px, 나머지는 13px 이하</li>
+      <li><b>색 정리</b> — 칩 4색 → 무채색 카운트 + 지연만 주황. 코드에 이미 있는 규칙(--badge-neutral / --urgent)을 화면에도 적용</li>
+      <li><b>줄 절약</b> — 날짜를 상태줄 오른쪽으로 올려 한 줄 확보. 모델명은 Qwen3.5-4B-Q4_K_M로 축약</li>
+      <li><b>오브 통일</b> — 무지개 링은 '작업 중/듣는 중'에만 쓰고 평상시엔 패널과 같은 재질의 림</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const FACES={
+ idle:["..............","..............","..............","...###...###..","..#####.#####.","..#####.#####.","..#####.#####.","...###...###..","..............","..............","..............","..............","..............",".............."],
+ mail:["..............","..............","..#########...","..#.......#...","..##.....##...","..#.##.##.#...","..#..###..#...","..#.......#...","..#########...","..............","..............","..............","..............",".............."],
+ clock:["..............","..#########...","..#.......#...","...#.....#....","....#...#.....",".....###......","....#...#.....","...#.....#....","..#..###..#...","..#.#####.#...","..#########...","..............","..............",".............."]
+};
+for(const cv of document.querySelectorAll('canvas[data-face]')){
+  const g=cv.getContext('2d'),N=14,S=cv.width/N,r=S*0.30,pat=FACES[cv.dataset.face],lit=cv.dataset.color;
+  g.clearRect(0,0,cv.width,cv.height);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const on=pat[y]&&pat[y][x]==='#';
+    g.beginPath();g.arc(x*S+S/2,y*S+S/2,on?r*1.12:r*0.62,0,6.284);
+    g.fillStyle=on?lit:'rgba(255,255,255,0.055)';g.fill();
+    if(on){g.shadowColor=lit;g.shadowBlur=S*0.9;g.fill();g.shadowBlur=0;}
+  }
+}
+</script>
+</body>
+</html>

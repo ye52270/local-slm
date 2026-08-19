@@ -1,0 +1,50 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Panel — 승인 · 결과 카드 · 작업 과정 · 작업물 패널" subtitle="쓰기 동작은 전부 승인 게이트를 지납니다" -->
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>
+*{box-sizing:border-box}body{margin:0;padding:18px 20px;background:#1c1d21;color:#ececee;font-family:var(--font-ui)}
+.grp{display:flex;flex-direction:column;gap:14px}
+.line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:#6c6c74;width:76px;flex:none}
+</style></head><body><div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Button, Chip, CountChip, Tag, SignalButton, PanelShell, ApprovalBox, AgentTrace, MailResultCard, OrbLed } = window.DesignSystem_15a016;
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+    <div className="grp" style={{flex:1,minWidth:0}}>
+      <ApprovalBox verb="메일 발송" target="윤중식 · [월보] 2026-07 월간운영 보고 재발송"
+        preview={"안녕하세요, 윤중식님.\n\n7월 월간운영 보고 관련 회신을 기다리고 있어 다시 보내드립니다."}
+        meta="외부 전송 없음 · 발송 후 되돌릴 수 없음" />
+      <MailResultCard sender="윤중식" subject="[월보] 2026-07 월간운영 보고 회신 요청"
+        preview="월간운영 보고 관련하여 확인 부탁드립니다." tag={<Tag tone="urgent">지연 27일</Tag>} />
+      <MailResultCard sender="박제영" subject="배포 확인 건"
+        preview="배포는 아직 완료되지 않았습니다." tag={<Tag tone="follow">회신 필요</Tag>} />
+      <AgentTrace defaultOpen steps={[
+        { label: "메일 검색 — 첨부·동의어 확장으로 12건 조회", agent: "mail", done: true },
+        { label: "타임라인 분석 — 미결 3건 식별", agent: "insight", done: true },
+        { label: "종합 — 병목 판단 + 다음 액션 제안", agent: "supervisor", done: true },
+      ]} />
+    </div>
+    <PanelShell title="답장 초안" icon="mail-plus" onClose={()=>{}} style={{width:280,height:352,borderLeft:'0.5px solid var(--border-default)'}}
+      footer={<><Button>닫기</Button><Button variant="primary" icon="send">발송 승인 요청</Button></>}>
+      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+        <label style={{fontSize:10.5,color:'var(--text-faint)',fontFamily:'var(--font-mono)',letterSpacing:'.06em'}}>TO</label>
+        <div style={{fontSize:12.5}}>윤중식 (YOON Joongshik)</div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+        <label style={{fontSize:10.5,color:'var(--text-faint)',fontFamily:'var(--font-mono)',letterSpacing:'.06em'}}>SUBJECT</label>
+        <div style={{fontSize:12.5}}>[월보] 2026-07 월간운영 보고 재발송</div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+        <label style={{fontSize:10.5,color:'var(--text-faint)',fontFamily:'var(--font-mono)',letterSpacing:'.06em'}}>BODY</label>
+        <div style={{fontSize:12.5,lineHeight:1.6,color:'var(--text-secondary)',background:'var(--surface-item)',border:'0.5px solid var(--border-default)',borderRadius:6,padding:'8px 9px'}}>
+          7월 월간운영 보고 관련 회신을 기다리고 있어 다시 보내드립니다.
+        </div>
+      </div>
+    </PanelShell>
+  </div>
+);
+</script></body></html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko" data-tone="graphite" data-theme="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>몰두봇 — 메일 요약</title>
+<!-- Office.js: 새 Outlook(Windows/Mac/웹)·클래식 Outlook 모두에서 로드된다. Graph API 불필요. -->
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<link rel="stylesheet" href="../ds/styles.css">
+<link rel="stylesheet" href="../ds/panel.css">
+<style>
+  html,body{margin:0;background:var(--surface-page)}
+  .kit{font-family:var(--font-ui);padding:10px}
+  .pane{display:flex;flex-direction:column;gap:12px}
+  .statusline{border-radius:10px}
+  .btnrow{display:flex;gap:7px;flex-wrap:wrap}
+  .breathe{animation:breathe 2.2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.5}}
+  .points li .ev{display:block;margin-top:2px;font-size:11px;line-height:1.5;color:var(--pf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .points li .ev:before{content:"근거 · ";font-family:var(--font-mono);font-size:10px}
+  .timing{font-family:var(--font-mono);font-size:10.5px;color:var(--pf)}
+  .approval textarea{width:100%;border:var(--item-bd);border-radius:6px;background:var(--item-bg);color:var(--pt);font-size:12.5px;line-height:1.6;padding:8px 9px;resize:vertical;height:150px;outline:none;font-family:inherit}
+  .err{font-size:12px;color:var(--urg)}
+</style>
+</head>
+<body>
+<div class="kit" data-mode="light" id="kit">
+  <div class="pane">
+    <div class="statusline"><span class="live" id="live"></span><span class="model" id="modelLine">Local SLM</span><span class="when" id="whenLine"></span></div>
+    <div id="out"></div>
+    <div class="btnrow">
+      <button class="btn primary" id="btnSum"><i class="ti ti-mail"></i>이 메일 요약</button>
+      <button class="btn" id="btnDraft" disabled><i class="ti ti-pencil"></i>답장 초안</button>
+      <button class="btn ghost" id="btnMode">다크</button>
+    </div>
+    <div id="draft"></div>
+    <div class="hint"><i class="ti ti-shield-check"></i>메일 내용은 이 PC 의 llama-server 로만 갑니다 · 답장은 열린 회신 창에서 확인 후 직접 보냅니다</div>
+  </div>
+</div>
+<script src="../pipeline.js"></script>
+<script>
+(function () {
+  'use strict';
+  const P = window.MailPipeline;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // 작업창이 https://<host>/addin/ 에서 열리므로 llama-server 는 같은 출처. 다른 포트면 ?base= 로 지정.
+  const BASE = new URLSearchParams(location.search).get('base') || '';
+  let mail = null, slots = null, model = '';
+
+  function setStatus(on, m) {
+    $('live').classList.toggle('off', !on);
+    $('modelLine').textContent = on ? `Local SLM · ${m}` : 'Local SLM · 연결 없음';
+    const d = new Date(); $('whenLine').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+  const dTag = (dl) => { if (!dl) return ''; const n = Math.round((new Date(dl + 'T00:00:00') - new Date(P.iso(new Date()) + 'T00:00:00')) / 864e5); return n < 0 ? `D+${-n}` : `D-${n}`; };
+
+  function readItem() {
+    return new Promise((resolve, reject) => {
+      const it = Office.context.mailbox.item;
+      if (!it) return reject(new Error('열려 있는 메일이 없습니다'));
+      it.body.getAsync(Office.CoercionType.Text, (r) => {
+        if (r.status !== Office.AsyncResultStatus.Succeeded) return reject(new Error('본문을 읽지 못했습니다'));
+        const from = it.from || it.sender || {};
+        resolve({
+          id: it.itemId || it.conversationId || String(Date.now()),
+          subject: it.subject || '',
+          senderName: from.displayName || '',
+          senderAddr: from.emailAddress || '',
+          received: it.dateTimeCreated ? P.iso(it.dateTimeCreated) + ' ' + String(it.dateTimeCreated.getHours()).padStart(2, '0') + ':' + String(it.dateTimeCreated.getMinutes()).padStart(2, '0') : '',
+          body: r.value || '',
+        });
+      });
+    });
+  }
+
+  function render() {
+    const out = $('out');
+    if (!mail) { out.innerHTML = ''; return; }
+    const sn = P.splitSender(mail.senderName, mail.senderAddr);
+    if (!slots) {
+      out.innerHTML = `<div class="hero"><div class="kick" style="color:var(--acc)"><i class="ti ti-mail"></i>메일 요약</div><div class="mtitle">${esc(mail.subject)}</div><ul class="points"><li class="breathe">요약 중입니다</li></ul></div>`;
+      return;
+    }
+    const points = [];
+    for (const a of slots.actionItems.slice(0, 2)) points.push({ t: a.text, ev: a.evidence });
+    if (slots.summary) points.push({ t: slots.summary, ev: '' });
+    if (!points.length) points.push({ t: '조치 요청이 없는 공지입니다', ev: '' });
+    const due = slots.deadline ? `<span><i class="ti ti-clock"></i>기한 <span class="mono">${slots.deadline.slice(5)} · ${dTag(slots.deadline)}</span></span>` : '';
+    out.innerHTML = `<div class="hero">
+      <div class="kick" style="color:var(--acc)"><i class="ti ti-mail"></i>메일 요약</div>
+      <div class="mtitle">${esc(mail.subject)}</div>
+      <div class="mmeta"><span><i class="ti ti-user"></i>${esc(sn.name)}${sn.team ? ' · ' + esc(sn.team) : ''}</span><span class="mono">${P.shortWhen(P.parseReceived(mail.received))}</span>${due}</div>
+      <ul class="points">${points.map((p) => `<li>${esc(p.t)}${p.ev ? `<span class="ev" title="${esc(p.ev)}">“${esc(p.ev)}”</span>` : ''}</li>`).join('')}</ul>
+      <div class="timing">${slots.timing.totalMs ? `${(slots.timing.totalMs / 1000).toFixed(1)}s · 입력 ${slots.timing.promptTokens} · 출력 ${slots.timing.tokens}` : 'cached'}</div>
+    </div>`;
+  }
+
+  async function summarize() {
+    $('btnSum').disabled = true; $('btnDraft').disabled = true; $('draft').innerHTML = '';
+    try {
+      mail = await readItem(); slots = null; render();
+      const c = P.cache.get(mail, model);
+      slots = c || await P.extract(mail, { base: BASE, model });
+      if (!c) P.cache.set(mail, model, slots);
+      render(); $('btnDraft').disabled = false;
+    } catch (e) {
+      $('out').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    } finally { $('btnSum').disabled = false; }
+  }
+
+  async function draft() {
+    if (!mail) return;
+    $('btnDraft').disabled = true;
+    $('draft').innerHTML = `<div class="approval"><div class="ahead"><i class="ti ti-pencil"></i>답장 초안</div><div class="prev breathe">초안을 쓰고 있습니다</div></div>`;
+    try {
+      const d = await P.draftReply(mail, slots, { base: BASE, model });
+      $('draft').innerHTML = `<div class="approval">
+        <div class="ahead"><i class="ti ti-shield-check"></i>발송 전 확인</div>
+        <div class="target">받는 사람 · ${esc(mail.senderName)} &lt;${esc(mail.senderAddr)}&gt;</div>
+        <textarea id="draftBody">${esc(d.body)}</textarea>
+        <div class="ameta"><i class="ti ti-alert-triangle"></i>회신 창이 열립니다 · 보내기는 직접 누릅니다</div>
+        <div class="aacts"><button class="btn ghost" id="btnDrop">거부</button><button class="btn primary" id="btnReply"><i class="ti ti-send"></i>회신 창 열기</button></div>
+      </div>`;
+      $('btnDrop').onclick = () => { $('draft').innerHTML = ''; $('btnDraft').disabled = false; };
+      $('btnReply').onclick = () => {
+        // 새 Outlook 에서도 지원되는 API. 회신 폼을 초안 본문으로 연다 — 발송은 사용자가 한다(승인 게이트).
+        const body = $('draftBody').value.replace(/\n/g, '<br>');
+        Office.context.mailbox.item.displayReplyForm({ htmlBody: body });
+      };
+    } catch (e) {
+      $('draft').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    } finally { $('btnDraft').disabled = false; }
+  }
+
+  $('btnSum').addEventListener('click', summarize);
+  $('btnDraft').addEventListener('click', draft);
+  $('btnMode').addEventListener('click', () => {
+    const k = $('kit'); const dark = k.dataset.mode !== 'dark';
+    k.dataset.mode = dark ? 'dark' : 'light'; document.documentElement.dataset.theme = dark ? '' : 'day'; $('btnMode').textContent = dark ? '라이트' : '다크';
+  });
+
+  // Outlook 밖(일반 브라우저)에서 열었을 때의 안내
+  setTimeout(() => { if (!(window.Office && Office.context && Office.context.mailbox)) { $('out').innerHTML = '<div class="hero"><div class="mtitle">Outlook 안에서 여는 화면입니다</div><ul class="points"><li>새 Outlook → 메일 열기 → 리본의 "몰두봇 › 메일 요약"</li><li>브라우저에서 보려면 상위 폴더의 브리핑 패널(/)을 여세요</li></ul></div>'; } }, 2500);
+  Office.onReady(async () => {
+    const h = await P.health(BASE);
+    model = h ? h.model : ''; setStatus(!!(h && h.ok), model);
+    // 열린 메일이 바뀌면(읽기 창 고정 모드) 결과를 비운다
+    try { Office.context.mailbox.addHandlerAsync(Office.EventType.ItemChanged, () => { mail = null; slots = null; render(); $('draft').innerHTML = ''; $('btnDraft').disabled = true; }); } catch (e) {}
+    summarize();
+  });
+})();
+</script>
+</body>
+</html>

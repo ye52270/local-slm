@@ -1,0 +1,9 @@
+/* 몰두봇 Design System — global entry. Imports only. */
+@import "tokens/fonts.css";
+@import "tokens/colors.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/surfaces.css";
+@import "tokens/motion.css";
+@import "tokens/semantic.css";
+@import "tokens/base.css";

@@ -1,0 +1,35 @@
+<!-- @dsCard group="Desktop Panel" viewport="1000x700" name="데스크톱 상주 패널" subtitle="런처 · 오늘 업무 · 진행 보고 · 초안 · 승인 · 파일/브라우저 제어" -->
+<!doctype html>
+<html lang="ko" data-tone="graphite">
+<head>
+<meta charset="utf-8">
+<title>몰두봇 — 데스크톱 상주 패널 UI 킷</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+html,body{margin:0;background:#eceef2}
+.kit{min-height:100vh;display:flex;flex-direction:column}
+.kit-bar{display:flex;align-items:center;gap:14px;padding:14px 20px;background:#fff;border-bottom:1px solid rgba(28,29,33,.10);flex-wrap:wrap}
+.kit-lbl{font-size:12.5px;color:#5b616c;font-weight:500;white-space:nowrap}
+.seg{display:flex;gap:2px;padding:2px;background:#f1f3f7;border:1px solid rgba(28,29,33,.08);border-radius:8px}
+.seg button{height:26px;padding:0 11px;border:0;background:transparent;border-radius:6px;font-size:12px;color:#5b616c;cursor:pointer;white-space:nowrap;flex:none}
+.seg button:hover{color:#1c1d21}
+.seg button.on{background:#fff;color:#1c1d21;box-shadow:0 1px 2px rgba(20,24,35,.12)}
+.stage{flex:1;display:flex;align-items:flex-end;justify-content:center;padding:48px 24px 40px;background:#dfe2e7;background-image:radial-gradient(rgba(28,29,33,.10) .75px,transparent .75px);background-size:14px 14px}
+.stage[data-mode="dark"]{background:#25272c;background-image:radial-gradient(rgba(236,236,238,.10) .75px,transparent .75px);background-size:14px 14px}
+.dock{display:flex;align-items:flex-end;gap:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="Control.jsx"></script>
+<script type="text/babel" src="Summary.jsx"></script>
+<script type="text/babel" src="Panel.jsx"></script>
+<script type="text/babel">
+ReactDOM.createRoot(document.getElementById('root')).render(<KitApp />);
+</script>
+</body>
+</html>

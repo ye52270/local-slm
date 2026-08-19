@@ -1,0 +1,65 @@
+:root{
+  /* ── WinOrbPoc 실측 지오메트리 (Windows/PanelWindow.xaml) ─────────────
+     창 560×최대 512. 바깥 셸 40, 안쪽 판 18(위쪽만), 항목 카드 8, 큰 카드 14,
+     칩 9, 입력바 28. 콘텐츠 판 폭 482, 하단 카드 폭 448. */
+  --panel-w:560px;
+  --panel-max-h:512px;
+  --panel-content-w:482px;
+  --panel-card-w:448px;
+  --radius-wpf-shell:40px;
+  --radius-wpf-plate:18px;
+  --radius-wpf-card:8px;
+  --radius-wpf-card-lg:14px;
+  --radius-wpf-chip:9px;
+  --radius-wpf-composer:28px;
+  --pad-wpf-btn:12px 8px;      /* @kind spacing */
+  --pad-wpf-btn-sm:9px 6px;    /* @kind spacing */
+  --pad-wpf-chip:8px 1px 3px;  /* @kind spacing */
+
+  /* Orb — DotMatrixDisplay.cs / EmotionRing.cs
+     LED 패널 168px 비트맵에 21열 × 16행, pitch 8, 도트 반지름 pitch*0.33.
+     켜진 도트는 반지름 1.65배 글로우(alpha 16%)를 함께 그립니다.
+     림은 외곽 반지름의 약 7%(=EmotionRing 13/187), 불투명도 0.9. */
+  --orb-dot-cols:21;   /* @kind other */
+  --orb-dot-rows:16;   /* @kind other */
+  --orb-dot-pitch:8px;
+  --orb-rim-ratio:.07; /* @kind other */
+
+  /* Launcher geometry (Electron 구현). Bar-only is a full pill; expanded keeps the
+     pill curvature at the bottom and rounds the top like a card. */
+  --radius-launcher-bar:44px;
+  --radius-launcher-top:20px;
+  --radius-shell:18px;
+  --radius-card:12px;
+  --radius-card-sm:10px;
+  --radius-chip:16px;
+  --radius-chip-sm:14px;
+  --radius-input:6px;
+  --radius-pill:999px;
+
+  /* Hairlines are 0.5px in this product — heavier borders read as boxy. */
+  --border-hair:0.5px; /* @kind spacing */
+  --border-width:1px; /* @kind spacing */
+  --accent-bar-w:3px; /* @kind spacing */
+
+  /* The launcher floats over the OS: no drop shadow (it smears on a transparent window),
+     just a 1px top highlight — the same "lit from above" cue as the orb rim. */
+  --shadow-none:none;
+  --shadow-launcher:inset 0 1px 1px rgba(255,255,255,.12);
+  --shadow-overlay:0 18px 48px -16px rgba(0,0,0,.6);
+  --shadow-orb:0 6px 18px -6px rgba(0,0,0,.55);
+  --ring-focus:0 0 0 2px rgba(91,141,239,.45);
+
+  /* Orb */
+  --orb-size:80px;
+  --orb-rim:3px; /* @kind spacing */
+  --orb-row-h:88px;
+
+  /* Dot-matrix field — the LED panel's texture, reused as a surface tint. */
+  --texture-dot-dark:radial-gradient(rgba(236,236,238,.10) .75px,transparent .75px); /* @kind other */
+  --texture-dot-light:radial-gradient(rgba(28,29,33,.13) .75px,transparent .75px); /* @kind other */
+  --texture-dot-size:6px 6px; /* @kind other */
+
+  --glass-blur:blur(18px) saturate(1.2); /* @kind other */
+  --scrollbar-w:8px; /* @kind spacing */
+}

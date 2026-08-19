@@ -1,0 +1,95 @@
+/* 브리핑 패널 — 킷(panel.css) 위에 얹는 최소 스타일. 색·라운드는 전부 킷 토큰을 쓴다. */
+html,body{margin:0;min-height:100%}
+.page{min-height:100vh;display:flex;flex-direction:column;font-family:var(--font-ui)}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#fff;border-bottom:1px solid rgba(28,29,33,.10);flex-wrap:wrap}
+.topbar .lbl{font-size:12.5px;color:#5b616c;font-weight:500;white-space:nowrap}
+.topbar .lbl.faint{color:#8b9099;font-weight:400;font-family:var(--font-mono);font-size:11px;margin-left:auto}
+.topbar #btnRefresh{color:#8b9099;border-style:dashed}
+.topbar .seg{display:flex;gap:2px;padding:2px;background:#f1f3f7;border:1px solid rgba(28,29,33,.08);border-radius:8px}
+.topbar .seg button{height:26px;padding:0 11px;border:0;background:transparent;border-radius:6px;font-size:12px;color:#5b616c;cursor:pointer;white-space:nowrap}
+.topbar .seg button.on{background:#fff;color:#1c1d21;box-shadow:0 1px 2px rgba(20,24,35,.12)}
+.topbar .lnk{height:26px;padding:0 10px;border:1px solid rgba(28,29,33,.12);background:#fff;border-radius:6px;font-size:12px;color:#5b616c;cursor:pointer}
+.topbar .lnk:hover{color:#1c1d21}
+.stage{flex:1;display:flex;align-items:flex-end;justify-content:center;padding:24px 24px 28px;min-height:calc(100vh - 48px);box-sizing:border-box;background:#dfe2e7;background-image:radial-gradient(rgba(28,29,33,.10) .75px,transparent .75px);background-size:14px 14px}
+.stage[data-mode="dark"]{background:#25272c;background-image:radial-gradient(rgba(236,236,238,.10) .75px,transparent .75px);background-size:14px 14px}
+
+/* 상태 표현 (readme: 시간이 걸리는 작업은 숨쉬기) */
+.breathe{animation:breathe 2.2s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.5}}
+@media (prefers-reduced-motion: reduce){.breathe{animation:none}}
+.statusline .live.off{background:var(--down,#c9505a);box-shadow:none}
+
+/* 요약 화면 보강 */
+.back{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:0;font-size:11.5px;color:var(--pf);cursor:pointer}
+.back:hover{color:var(--pm)}
+.points li .ev{display:block;margin-top:2px;font-size:11px;line-height:1.5;color:var(--pf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.points li .ev:before{content:"근거 · ";font-family:var(--font-mono);font-size:10px;letter-spacing:.04em}
+.mmeta .due{color:var(--pm)}
+.mmeta .due.urgent{color:var(--urg)}
+.mmeta .due.warn{color:var(--warn)}
+.excerpt.full{max-height:260px;overflow-y:auto;white-space:pre-wrap}
+.row .tagwrap{display:flex;gap:6px;flex:none;align-items:center}
+.row.pending .t,.row.pending .m{color:var(--pf)}
+.row .m .mono{font-family:var(--font-mono);font-size:10.5px}
+.empty{padding:22px 10px;font-size:13px;color:var(--pm);text-align:center}
+.empty .chips{justify-content:center;margin-top:10px}
+.timing{font-family:var(--font-mono);font-size:10.5px;color:var(--pf);letter-spacing:.02em}
+
+/* 답장 초안 작업물 패널 */
+.artifact[hidden]{display:none}
+.launcher.wide .stream{max-height:560px}
+.artifact .abody{max-height:420px}
+.artifact .fld textarea{height:200px}
+
+/* 리포트 · 작업 로그 */
+.chips.views{margin-top:-4px}
+.report .answer{margin:2px 0 4px}
+.report .item .t{white-space:normal;line-height:1.4}
+.report .item .m .mono{font-family:var(--font-mono);font-size:10.5px}
+.report .item.due .accent{background:var(--warn)}
+.report .item.late .accent{background:var(--urg)}
+.report .item.info .accent{background:var(--pf)}
+.steps .step .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot-note{font-size:11px;color:var(--pf)}
+
+/* 도크: 런처 + 오브(오른쪽 88px 슬롯). 화면 우하단에 붙는 몰두봇 배치 */
+.dock{display:flex;align-items:flex-end;gap:10px}
+.dock .col{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.launcher.bar-only .statusline,.launcher.bar-only .body{display:none}
+.launcher.bar-only{width:520px}
+.bubble[hidden]{display:none}
+.bubble{width:320px;align-self:flex-start}
+.composer .field input{font-family:var(--font-ui)}
+.composer{cursor:text}
+.orb.busy{animation:spin 3.4s linear infinite}
+@media (prefers-reduced-motion: reduce){.orb.busy{animation:none}}
+.focustag[hidden]{display:none}
+
+/* 명령 팔레트 (컴포저 위로 뜬다) */
+.palette{margin:0 16px;border:0.5px solid var(--rule);border-radius:var(--r-card);background:var(--plate);overflow:hidden}
+.palette[hidden]{display:none}
+.palette .psec{font-size:10.5px;color:var(--pf);padding:8px 12px 4px;font-family:var(--font-mono);letter-spacing:.04em}
+.palette .pitem{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:12.5px;color:var(--pm);cursor:pointer;min-width:0}
+.palette .pitem .ti{font-size:14px;color:var(--pf);flex:none}
+.palette .pitem .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pt)}
+.palette .pitem .m{font-size:11px;color:var(--pf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.palette .pitem .k{font-family:var(--font-mono);font-size:10px;color:var(--pf);border:0.5px solid var(--rule);border-radius:4px;padding:1px 5px;flex:none}
+.palette .pitem.sel,.palette .pitem:hover{background:var(--item-bg)}
+.palette .pitem.sel .t{color:var(--acc)}
+.palette mark{background:var(--acc-bg);color:var(--acc);border-radius:2px;padding:0 1px}
+.palette .pempty{padding:10px 12px;font-size:12px;color:var(--pf)}
+/* 대기열 칩 */
+.qchip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:var(--r-chip);border:0.5px solid var(--acc-bd);background:var(--acc-bg);color:var(--acc);font-size:11px;cursor:pointer;flex:none;white-space:nowrap}
+.qchip[hidden]{display:none}
+.qchip .ti{font-size:13px;animation:spin 1.6s linear infinite}
+@media (prefers-reduced-motion: reduce){.qchip .ti{animation:none}}
+/* 완료·빠른 동작 */
+.row .quick,.item .quick{display:none;gap:4px;flex:none;margin-left:6px}
+.row:hover .quick,.item:hover .quick{display:flex}
+.row .quick button,.item .quick button{height:22px;padding:0 8px;border-radius:var(--r-btn);border:0.5px solid var(--btn-bd);background:var(--btn-bg);color:var(--pm);font-size:11px;cursor:pointer;white-space:nowrap}
+.row .quick button:hover,.item .quick button:hover{color:var(--pt);background:var(--btn-hover)}
+.row.done .t,.item.done .t{text-decoration:line-through;color:var(--pf)}
+.row.done,.item.done{opacity:.6}
+.doneline{font-size:11.5px;color:var(--pf);display:flex;align-items:center;gap:6px}
+.doneline b{font-family:var(--font-mono);font-weight:500;color:var(--pm)}
+.report .wrap-hero{border-radius:var(--r-card);padding:12px 14px;background:var(--acc-bg);border:1px solid var(--acc-bd);font-size:13px;line-height:1.55}

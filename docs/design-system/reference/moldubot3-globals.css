@@ -1,0 +1,1718 @@
+:root {
+  --bg: #1c1d21;
+  --panel: #26272c;
+  --panel-2: #2e2f35;
+  --text: #ececee;
+  --muted: #9a9aa2;
+  --faint: #6c6c74;
+  --accent: #5b8def;
+  --accent-bg: rgba(91, 141, 239, 0.14);
+  --ok: #3ec46d;
+  --down: #e0563b;
+  --warn: #e0a23b;
+  --warn-bg: rgba(224, 162, 59, 0.12);
+  --border: rgba(255, 255, 255, 0.08);
+  /* 떠 있는 표면(런처 헤더·퀵바)의 단일 다크 글래스 톤 — 이 하나로 통일해 표면들이 안 튀게.
+     콘텐츠 바탕(.main 등)엔 안 씀(가독성 우선, 거의 불투명). */
+  --glass-surface: linear-gradient(170deg, rgba(46, 48, 58, 0.93), rgba(30, 31, 38, 0.95));
+  --main-bg: rgba(28, 29, 33, 0.92); /* 콘텐츠 바탕(.main) — 톤 A/B가 갈아끼움 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+}
+
+/* 톤 B: 웜 그레이(plan-ui-refresh ⑤ — #232019 계열, 순수 블랙은 기각). '/톤'으로 전환.
+   변수만 갈아끼움 — 구조·컴포넌트 무변. 기본(A)은 그래파이트. */
+html[data-tone="warm"] {
+  --bg: #211f1b;
+  --panel: #2a2723;
+  --panel-2: #322f2a;
+  --border: rgba(255, 250, 240, 0.08);
+  --glass-surface: linear-gradient(170deg, rgba(56, 52, 46, 0.93), rgba(36, 34, 30, 0.95));
+  --main-bg: rgba(33, 31, 27, 0.92);
+}
+
+/* 개선안 정합 토큰(design_handoff 2026-07-07) — 기존 톤 A/B 변수와 공존.
+   톤에 안 묶이는 '의미색'(긴급/근거/시리 글로우)만 여기 모은다. 컬러 하드코딩을
+   흩뿌리지 않고 한 곳에서 관리 — 개선안 § Design Tokens 대응. */
+:root {
+  /* 긴급 빨강 — '즉시 조치 1건' 전용(개선안 뱃지 규칙). 기존 --down(연결끊김)과 구분. */
+  --urgent: #ff4d4a;
+  --urgent-ring: rgba(26, 28, 33, 0.9);
+  /* 무채색 카운트 뱃지(긴급 아님) — 상시 불안감 제거 */
+  --badge-neutral-bg: rgba(255, 255, 255, 0.18);
+  --badge-neutral-text: #e9ecf1;
+  --badge-neutral-border: rgba(255, 255, 255, 0.12);
+  /* 긴급도 태그(결과 카드 F) */
+  --tag-urgent-bg: rgba(255, 77, 74, 0.14);
+  --tag-urgent-border: rgba(255, 77, 74, 0.3);
+  --tag-urgent-text: #ff8f6b;
+  --tag-follow-bg: rgba(74, 137, 255, 0.14);
+  --tag-follow-border: rgba(74, 137, 255, 0.3);
+  --tag-follow-text: #8fb0ff;
+  /* 진행/트레일 상태색(작업중 B) */
+  --step-done: #7cfc5a;
+  --step-active: #e9ecf1;
+  --step-pending: #6b7280;
+  --progress-accent: #4a89ff;
+  /* 상세 오버레이(C) — 불투명 카드 + 강한 스크림 */
+  --overlay-scrim: rgba(8, 10, 14, 0.62);
+  --overlay-card: #22252b;
+  --overlay-highlight-bg: rgba(74, 137, 255, 0.1);
+  --overlay-highlight-border: rgba(74, 137, 255, 0.22);
+  --overlay-highlight-text: #bcd0ff;
+  /* 시리 글로우 conic(듣는중 D) */
+  --siri-conic: conic-gradient(from 0deg, #4a89ff, #7c5cff, #ff4d9d, #ffb84a, #4ad6c8, #4a89ff);
+  --siri-outer-glow: rgba(124, 92, 255, 0.28);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; background: transparent !important;
+  height: 100%;
+  /* 투명 플로팅 창 — 콘텐츠가 창을 몇 px만 넘겨도 스크롤바가 뜬다(퀵바/오브에서 특히). 억제. */
+  overflow: hidden;
+}
+/* 진단 결과: 회색 선은 카드(빨간선) '아래'에 있었다 = #root/body의 투명 영역이 회색으로 렌더됨.
+   #root가 launcher를 빈틈없이 감싸 그 아래 빈 영역이 안 보이게 한다. */
+/* 바닥 정렬 — 창이 콘텐츠보다 커도(안전 여백 +8 등) 남는 공간은 '위'로 가게.
+   오브·입력바의 화면 위치가 창 높이 오차와 무관하게 고정된다(펼침↔접힘 튐 방지). */
+#root {
+  background: transparent; line-height: 0; height: 100%;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+#root > * { line-height: normal; }
+body { color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* 다크 스크롤바 (흰 배경 회색 → 어두운 배경에 옅은 thumb) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14); border-radius: 4px;
+  border: 2px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); background-clip: padding-box; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.14) transparent; }
+
+/* 런처 컨테이너 — 콘텐츠 높이만큼 (Electron이 창 리사이즈) */
+.launcher {
+  position: relative;
+  /* 콘텐츠가 창(최대 680)보다 길면 #root의 바닥 정렬(flex-end) 때문에 '위'가 창 밖으로
+     밀려 패널 헤더(알림 제목·닫기 X)가 사라졌다(2026-07-06, 알림 9개+에서 발현).
+     창 높이에 묶어 내부 스크롤(.main/jobs-host overflow)로 처리.
+     %는 부모(auto) 체인에서 무력 — 뷰포트 직접 참조(100vh). */
+  max-height: 100vh;
+  /* 입력창을 '아래' 고정, 출력(대화·패널)은 '위'로 쌓임 — 카톡식. JSX 순서는 유지하고 order로 뒤집는다. */
+  display: flex; flex-direction: column;
+  /* Liquid Glass 표면 — 반투명 + 블러로 vibrancy/뒤가 비친다. 빛 테두리가 '유리가 떠 있음'의 핵심. */
+  /* 검정 박스가 아니라 위가 살짝 밝은 깊은 톤 — 단조로움 방지, 자체 광학으로 깊이감. */
+  background: var(--glass-surface);
+  border-radius: 18px;
+  overflow: hidden;
+  /* 바깥 box-shadow는 투명창에서 회색 띠(진단 확정) — 안쪽 하이라이트만.
+     상단 1px 하이라이트 = 오브 림과 같은 '위에서 빛 받는' 조명(디자인 협의 2026-07-04). */
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  /* 창 이동은 오브로만(창 분리 후 사용자 결정 2026-07-06) — 채팅 창을 끌면 혼자
+     떨어져 나가 오브와 정렬이 깨진다. app-region:drag 은퇴. */
+}
+/* 시리 글로우(개선안 D — 듣는 중/작업 중) — 채팅바 '테두리 자체'에 컬러가 흐른다.
+   구현: ::before를 launcher와 정확히 같은 크기(inset:0)로 두고 conic-gradient를
+   padding+mask로 2.5px '링'만 남긴다. mask가 border-radius(44px)를 그대로 따라가
+   모서리·가장자리에 검정 틈이 생기지 않는다(박스를 회전시키던 이전 방식은 정사각형이
+   pill 모서리에서 잘려 바깥에 어두운 테두리가 보였다 — 그 버그를 제거). 회전은 박스가
+   아니라 conic 각도(--mb-angle)만 돌려 어떤 누출도 없다. glow-active일 때만 애니메이션. */
+@property --mb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.launcher.glow-active::before {
+  content: "";
+  position: absolute; inset: 0;
+  /* 링은 콘텐츠(.main 배경, z:1)보다 '위'에 그려 창 전체 둘레로 보이게 한다 — z:0이면
+     불투명한 .main 배경이 위·옆 링을 덮어 아래(composer)만 보였다(2026-07-07 실측 버그).
+     2.5px 가장자리 링이라 콘텐츠를 가리지 않고, pointer-events:none으로 클릭도 안 막는다. */
+  z-index: 2;
+  border-radius: inherit;
+  padding: 2.5px; /* = 링 두께 */
+  background: conic-gradient(
+    from var(--mb-angle),
+    #4a89ff, #7c5cff, #ff4d9d, #ffb84a, #4ad6c8, #4a89ff
+  );
+  /* border-box 전체 − content-box 내부 = 2.5px 테두리 링만 칠해진다(라운딩 그대로 따라감). */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: mb-siri-rotate 3.4s linear infinite;
+  pointer-events: none;
+}
+/* 은은한 외곽 글로우 — 보라 계열만 살짝(링 바깥으로 빛만, 어두운 테두리 아님). */
+.launcher.glow-active {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    0 0 22px var(--siri-outer-glow);
+}
+/* composer/main은 z:1(링 z:2보다 아래) — 링이 콘텐츠 가장자리 위로 흐른다. */
+.launcher.glow-active > * { position: relative; z-index: 1; }
+@keyframes mb-siri-rotate {
+  to { --mb-angle: 360deg; }
+}
+/* 모션 줄이기 선호 시 — 회전 정지, 정적 링만(글로우 의미는 유지). */
+@media (prefers-reduced-motion: reduce) {
+  .launcher.glow-active::before { animation: none; }
+}
+
+/* 채팅바 신호 링(사용자 요청 2026-07-07) — 시리 글로우가 꺼진 대기 상태에서 신호가
+   있으면 그 신호 색(--signal-ring, App이 오브와 같은 팔레트로 내려줌) 링을 바 테두리에.
+   구현은 시리 링과 동일한 padding+mask(라운딩 그대로 따라감, z:2로 콘텐츠 위). 오브 신호
+   링과 같은 맥동(숨쉬기)으로 '여기 신호 있어요'를 은은히. glow-active면 이 규칙은 안 붙는다
+   (JS에서 !glowActive일 때만 has-signal → 둘이 겹치지 않음). */
+.launcher.has-signal::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: inherit;
+  padding: 2px; /* 링 두께 */
+  background: var(--signal-ring, #ffb84d);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: launcherSignalBreathe 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.launcher.has-signal > * { position: relative; z-index: 1; }
+@keyframes launcherSignalBreathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launcher.has-signal::after { animation: none; opacity: 0.9; }
+}
+
+/* 투명도/모션 줄이기 선호 시 — 글래스 끄고 불투명·블러 제거(접근성). */
+@media (prefers-reduced-transparency: reduce) {
+  .launcher {
+    background: var(--panel);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+/* 파일 드래그 오버 시 안내 오버레이 */
+.drop-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(20, 22, 28, 0.82);
+  border: 2px dashed var(--accent); border-radius: 14px;
+  color: var(--accent); font-size: 14px; font-weight: 600;
+  pointer-events: none;
+}
+.drop-overlay i { font-size: 34px; }
+
+/* 입력바 */
+/* 입력창(composer)은 order 2 = 시각상 맨 아래 고정. 출력 영역은 order 1(위). */
+.composer { display: flex; align-items: center; gap: 8px; padding: 16px 16px; order: 2; flex-shrink: 0; position: relative; /* 슬래시 팝업 앵커 */ }
+.launcher .main { order: 1; }
+/* 출력이 위에서 자라고 입력이 아래 고정 — main은 남는 공간 채우되 내부 스크롤. */
+.launcher .main { flex: 1 1 auto; min-height: 0; }
+/* 입력만 있을 땐 완전 알약(pill = 오브와 같은 88px 높이 — 낮으면 옆 오브가 커 보이는
+   착시, 사용자 피드백 2026-07-04). */
+.launcher.bar-only { border-radius: 44px; min-height: 88px; }
+.launcher.bar-only .composer { flex: 1; } /* 높아진 바에서 입력을 세로 중앙에 */
+/* 확대되면(사용자 그림): 아래는 입력바 pill 곡률(44px) 유지 = 양끝 반원, 위는 둥근 사각(20px).
+   → 입력바 모양은 그대로, 위로 콘텐츠가 자라며 상단만 둥근 형태. */
+.launcher.has-output { border-radius: 20px 20px 44px 44px; }
+/* 입력바(맨 아래) 위에 얇은 구분선으로 '입력 영역'을 콘텐츠와 분리. */
+.launcher.has-output .composer { border-top: 0.5px solid var(--border); }
+/* composer 안 배치(목업 확정): [시스템 order1] │ [입력 order2] │ [액션 order3] [dot order5].
+   JSX 순서와 무관하게 order로 3그룹 배치 — 시스템 왼쪽, 입력 가운데, 액션 오른쪽. */
+.composer input, .composer textarea { order: 2; }
+.composer .bar-signals { order: 3; } /* 신호는 입력 오른쪽(오브 쪽) — 사용자 확정 2026-07-04 */
+.composer .act { order: 4; }
+.composer .dot { order: 5; margin-left: 6px; }
+/* 음성(유일한 상시 액션 아이콘) — 평소 채도↓, hover 원색. */
+.act-mic { color: #7787a8; margin-left: 2px; }
+.act-mic:hover { color: #8ab0f0; }
+.act-mic.converting { color: #8ab0f0; opacity: 0.8; cursor: default; }
+/* 듣는 중(개선안 D) — 보라 틴트 원 + 맥동. 글로우("반응 중")와 역할 분리: 마이크는
+   '음성 입력 수단'을 가리키고, 테두리 글로우가 '지금 반응 중'을 말한다.
+   specificity를 icon-btn.listening(빨강)보다 높여 색이 확실히 보라로 덮이게. */
+.icon-btn.act-mic.listening {
+  color: #c9bcff;
+  background: rgba(124, 92, 255, 0.2);
+  animation: pulse 1.2s infinite;
+}
+/* 신호 아이콘(입력 오른쪽 — 오브 쪽에 붙어 '신호 기둥', 사용자 확정 2026-07-04) —
+   있을 때만(0건=숨김). 클릭=프롬프트 삽입(종=알림 패널). 색 틴트 원 + 빨간 뱃지. */
+.bar-signals { display: flex; gap: 10px; margin: 0 8px 0 6px; }
+.bsig {
+  position: relative; border: none; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; line-height: 1; padding: 0;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.bsig-cal { color: #9db4ff; background: rgba(142, 168, 255, 0.14); }
+.bsig-mail { color: #f0958a; background: rgba(232, 138, 125, 0.14); }
+.bsig-todo { color: #9fe0b4; background: rgba(168, 230, 184, 0.14); }
+.bsig-bell { color: #f0c274; background: rgba(232, 178, 92, 0.14); }
+/* ⏱ 타이머(설계 10 S4) — 예약 잡이 기록돼 있다는 신호. 캐럿의 형광 연노랑 계열. */
+.bsig-timer { color: #e8e07a; background: rgba(232, 224, 122, 0.14); }
+.bsig:hover { transform: scale(1.1); filter: brightness(1.15); }
+.bsig-badge {
+  position: absolute; top: -4px; right: -5px;
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 700;
+}
+/* 개선안 뱃지 규칙: 무채색=기본(카운트), 빨강=즉시 조치 1건 전용. */
+.bsig-badge.neutral {
+  background: var(--badge-neutral-bg); color: var(--badge-neutral-text);
+  border: 1px solid var(--badge-neutral-border);
+}
+.bsig-badge.urgent {
+  background: var(--urgent); color: #fff;
+  box-shadow: 0 0 0 2px var(--urgent-ring);
+}
+.composer input,
+.composer textarea {
+  flex: 1; border: none; background: transparent; color: var(--text);
+  font-size: 16px; outline: none;
+}
+/* 입력=textarea(2026-07-04): 폭 고정·줄바꿈 누적. Enter=전송, Shift+Enter=줄바꿈.
+   캐럿=LED 형광 연노랑 — 시그니처 에코 한 방울(디자인 협의: 바는 조용하게, 커서만). */
+.composer textarea {
+  resize: none; font-family: inherit; line-height: 1.45;
+  max-height: 140px; overflow-y: auto; padding: 2px 0;
+  caret-color: #e9f56b;
+}
+.composer input::placeholder,
+.composer textarea::placeholder { color: var(--faint); }
+
+.icon-btn {
+  border: none; background: transparent; color: var(--muted);
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.icon-btn:hover { background: var(--panel-2); color: var(--text); }
+.icon-btn.listening { color: var(--down); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot.ok { background: var(--ok); }
+.dot.down { background: var(--down); }
+
+/* shell = [떠 있는 말풍선] + [채팅 바]. 배경 투명 — 바 모양은 .launcher가 그대로 가진다. */
+.shell { display: flex; flex-direction: column; background: transparent; }
+
+
+
+
+/* 슬래시 메뉴 — '/' 입력 중에만, ↑↓ 이동·Enter 실행. 두 배치:
+   .overlay = 대화가 있을 때 입력창 위에 떠 있는 팝업(레이아웃 불변).
+   .float   = 바만 있을 때 바 '바깥 위' in-flow(창이 위로 자람 — 오버레이는 창 밖으로 잘림). */
+.slash-menu {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(52, 54, 66, 0.98), rgba(36, 38, 48, 0.99));
+  /* 바깥 그림자 금지 — 투명 Electron 창에선 검은 윤곽으로 렌더된다(orb와 동일 함정).
+     안쪽 광택만. */
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18);
+  animation: peekGrow 0.18s ease-out;
+  transform-origin: center bottom;
+}
+.slash-menu.overlay {
+  position: absolute; bottom: calc(100% + 8px); left: 44px; right: 44px; z-index: 30;
+}
+.slash-menu.float { margin: 4px 24px 10px; }
+.slash-item {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 10px; border: none; border-radius: 8px;
+  background: none; cursor: pointer; text-align: left;
+}
+.slash-item:hover, .slash-item.selected { background: rgba(255, 255, 255, 0.09); }
+.slash-label { color: var(--text); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.slash-label kbd {
+  margin-left: 6px; padding: 0 4px; border-radius: 4px; font-size: 10px;
+  background: rgba(255, 255, 255, 0.1); color: var(--muted);
+}
+.slash-desc {
+  color: var(--muted); font-size: 11.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 패널 하단 안내 — 질문은 메인 입력창에서(단일 대화, 06 §7). 은은하게. */
+/* 할 일 상세 패널 — 기한·내용(2026-07-06). */
+.todo-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.todo-meta-label { color: var(--muted); font-size: 11px; }
+.todo-due { display: inline-flex; align-items: center; gap: 5px; color: var(--text); }
+.todo-due .ti { font-size: 14px; color: var(--accent); }
+.todo-due.overdue { color: #e0b060; }
+.todo-due.overdue .ti { color: #e0b060; }
+.todo-due.none { color: var(--muted); }
+.todo-body { margin-top: 12px; font-size: 13px; line-height: 1.6; color: var(--muted); white-space: pre-wrap; }
+
+.panel-focus-hint {
+  display: flex; align-items: center; gap: 6px; margin-top: 14px;
+  color: var(--muted); font-size: 11px; opacity: 0.8;
+}
+
+/* 연결 배너(P1) — 끊겼을 때만 composer 위에 한 줄. */
+.conn-banner {
+  display: flex; align-items: center; gap: 6px;
+  margin: 6px 10px 0; padding: 6px 12px; border-radius: 10px;
+  background: rgba(224, 90, 90, 0.14); color: #e8a0a0; font-size: 12px;
+}
+
+
+/* 배치 완료 알림 벨 (FR-5.6) */
+.bell {
+  position: relative; border: none; background: transparent; color: var(--warn);
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bell:hover { background: var(--panel-2); }
+
+/* 안 본 이벤트 드롭다운(종 클릭) — 헤더 아래 우측 */
+
+/* 인사이트 브리핑 패널 — 글꼴 크기는 여기서 입힌다(LLM은 의미만) */
+.brief-headline { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 8px; }
+.brief-summary { font-size: 13.5px; color: var(--text); line-height: 1.6; margin-bottom: 16px; }
+.brief-section { margin-bottom: 16px; }
+.brief-section-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+.brief-item {
+  display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+  background: var(--panel-2); border: 0.5px solid var(--border); border-radius: 9px;
+  padding: 10px 12px; margin-bottom: 6px; cursor: pointer; color: var(--text);
+}
+.brief-item:hover:not(.is-static) { border-color: var(--accent); }
+.brief-item.is-static { cursor: default; }
+.brief-item-main { font-size: 13.5px; font-weight: 600; }
+.brief-item-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* 메인에 크게 펼치는 브리핑 카드 */
+.briefcard {
+  background: var(--panel); border: 0.5px solid var(--border); border-radius: 14px;
+  padding: 16px 18px; margin: 4px 0;
+}
+.briefcard-head {
+  display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  color: var(--accent); margin-bottom: 10px;
+}
+.briefcard .brief-item { position: relative; padding-right: 92px; }
+/* 제안 클릭 시 할 동작 힌트(일정·회의실 예약 / 답장 초안 …) + 화살표 */
+.brief-item-action {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 2px;
+  color: var(--accent); font-size: 11px; font-weight: 600; opacity: 0.85;
+}
+.brief-item:hover .brief-item-action { opacity: 1; }
+
+/* 빠른 시작 칩 (런처 빈 상태) */
+
+.chip {
+  border: 0.5px solid var(--border); background: var(--panel-2); color: var(--muted);
+  font-size: 13px; padding: 6px 12px; border-radius: 16px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.chip i { font-size: 14px; }
+.chip:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+.chip.accent { background: var(--accent-bg); color: var(--accent); border-color: rgba(91,141,239,0.4); }
+
+/* 펼침 본문 — 기본 단일, wide면 좌우 분할 */
+/* 콘텐츠(채팅·패널) 바탕은 거의 불투명 — 글래스 표면 위라도 텍스트 가독성 우선(전문가 §1). */
+.main { display: flex; position: relative; background: var(--main-bg); }
+/* 맨 위 콘텐츠(.main)는 창 상단 라운딩(18px)을 따라가 위 모서리가 둥글게 — 각진 코너 방지. */
+.launcher.has-output > .main:first-child { border-top-left-radius: 18px; border-top-right-radius: 18px; }
+/* 잡 패널 좌측 host */
+.jobs-host { flex: 1; min-width: 0; overflow-y: auto; }
+.jobs-host > .mailpanel { width: 100%; }
+
+/* ── 미닫이 패널(plan-main-game §3) — 창 크기 불변, 채팅 위로 슬라이드.
+   wide(1400px 창 확장)는 은퇴: 분산감의 원인은 내용이 아니라 창이 커지는 점프였다. ── */
+.drawer {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 86%; z-index: 5;
+  display: flex; overflow: hidden;
+  background: rgba(24, 25, 30, 0.99);
+  border-left: 0.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -18px 0 30px rgba(0, 0, 0, 0.35); /* 창 내부 그림자 — 투명창 함정 아님 */
+  animation: drawerIn 0.34s cubic-bezier(0.32, 0.72, 0.35, 1);
+}
+@keyframes drawerIn { from { transform: translateX(105%); } to { transform: none; } }
+.drawer > .mailpanel { flex: 1; width: auto; overflow-y: auto; }
+/* 미닫이가 열리면 콘텐츠 최소 높이 확보(짧은 대화에서 패널이 쪼그라들지 않게).
+   주의: .thread의 max-height는 풀지 않는다 — 풀면 대화가 길 때 .main이 창 상한
+   (EXPANDED_HEIGHT 680)을 넘어 위가 잘리고 패널 헤더·본문이 창 밖으로 나간다
+   (2026-07-04 초안 패널 잘림 버그). 스크롤은 thread·패널이 각자 내부에서. */
+.main:has(> .drawer) { min-height: 440px; }
+
+
+/* 오브가 미닫이를 미는 제스처(§4) — 패널이 '나타나는' 게 아니라 비서가 '열어 보여준다'. */
+/* 동반석은 호버 확대 없음 — 바 옆에서 커지면 정렬이 흔들려 보인다("크기가 다른 듯"의
+   정체, 2026-07-04). 표정 반응(o_o)은 유지 — 성격은 얼굴로, 크기는 불변. */
+.jobs-clickable { cursor: pointer; }
+.jobs-clickable:hover .jobs-req { color: var(--accent); }
+
+/* 회의실 예약 폼 (우측 패널) */
+.room-form { display: flex; flex-direction: column; gap: 14px; }
+.room-times { display: flex; gap: 10px; }
+.room-field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.room-field span { font-size: 12px; color: var(--muted); }
+.room-field input {
+  background: rgba(255,255,255,0.05); border: 0.5px solid var(--border);
+  border-radius: 6px; padding: 7px 9px; color: var(--text); font-size: 13px;
+  color-scheme: dark;
+}
+.room-book {
+  margin-top: 4px; background: var(--accent); color: #fff; border: none;
+  border-radius: 7px; padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.room-book:disabled { opacity: 0.5; cursor: default; }
+
+/* 메일 보내기 — 큰 풀폭 버튼(초안 발송) */
+/* 초안 액션 — primary는 'Outlook에 초안으로'(기본 동선), 직접 발송은 ghost 보조. */
+.draft-actions { display: flex; gap: 8px; width: 100%; }
+.draft-actions .draft-send-btn { flex: 1; }
+/* 초안 액션 — 미닫이 분위기(조용한 유리 pill). .mailpanel-ask에 들어가면 QA 버튼 규칙
+   (.mailpanel-ask button: 파란 통짜 배경·padding 0)이 이겨서 두 버튼이 파랗게 뭉개지고
+   라벨이 세 줄로 꺾였다(2026-07-04 스크린샷) → 같은 자리 셀렉터로 명시 오버라이드. */
+.draft-send-btn,
+.mailpanel-ask .draft-send-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: rgba(142, 168, 255, 0.13); color: #9db4ff;
+  border: 0.5px solid rgba(142, 168, 255, 0.32); border-radius: 999px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+.draft-send-btn:hover:not(:disabled),
+.mailpanel-ask .draft-send-btn:hover:not(:disabled) {
+  background: rgba(142, 168, 255, 0.2); color: #c3d2ff; filter: none;
+}
+.draft-send-btn:disabled { opacity: 0.6; cursor: default; }
+.draft-send-btn .ti { font-size: 15px; }
+.draft-ghost-btn,
+.mailpanel-ask .draft-ghost-btn {
+  flex: 0 0 auto; background: transparent; color: var(--muted);
+  border: 0.5px solid var(--border);
+}
+.draft-ghost-btn:hover:not(:disabled),
+.mailpanel-ask .draft-ghost-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05); color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 퀵 스트립(3단 사다리 가운데 층) — 첫 단답은 풀 캔버스 대신 '답 한 조각'.
+   조건(카드 2+·후속·패널)이 깨지면 같은 렌더가 자동으로 캔버스 승격. ESC=조각 지우고 바로. */
+.main.strip .thread { padding: 10px 16px 8px; gap: 8px; max-height: 320px; }
+.main.strip .user-q { display: none; } /* 방금 친 질문 echo는 한 조각에선 소음 */
+.main.strip .summary { font-size: 13px; }
+
+/* 펼침 스레드 */
+.thread {
+  flex: 1; min-width: 0;
+  padding: 14px 16px; max-height: 600px; overflow-y: auto;
+  /* 일반 채팅 관례 — 위→아래 정방향(최신이 아래). 새 답변 오면 JS가 자동 하단 스크롤.
+     (이전 column-reverse는 콘텐츠가 max-height 넘으면 위쪽이 입력창을 뚫고 잘려 보였다.) */
+  display: flex; flex-direction: column; gap: 16px;
+}
+/* 한 교환(질문→답변)은 정상 순서 유지(질문 위, 답변 아래) */
+.exchange { display: flex; flex-direction: column; gap: 10px; }
+.turn { display: flex; flex-direction: column; }
+
+.user-q { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+/* '나' 마커 — 아바타 원(FocusQAThread와 같은 언어, accent 톤). 인라인이라 18px로 작게. */
+.user-q-me {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-bg); color: var(--accent);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.user-q-me .ti { font-size: 11px; }
+
+.answer { display: flex; flex-direction: column; gap: 12px; }
+/* 답변 본문 — 표(.md table)·목록과 같은 14px로 통일(제목만 위계 유지). */
+/* 나레이션(요약) = 주인공(사용자 요청 2026-07-07) — 카드는 접히고 이 산문이 먼저 읽히게
+   살짝 키우고 또렷하게. 카드(근거)는 아래서 접힌 채 대기. */
+.summary {
+  font-size: 15px; line-height: 1.65; margin: 0; color: var(--text);
+  letter-spacing: -0.01em;
+}
+.summary strong, .summary b { color: #f4f6fa; font-weight: 600; }
+/* 나레이션이 마크다운(.md)으로 렌더돼도 15px 유지 — 주인공 위계(2026-07-07 리뷰).
+   결론/준비 두 블록 사이 여백은 .md p가 준다. 📌 준비 필요 줄은 살짝 도드라지게. */
+.summary .md { font-size: 15px; line-height: 1.65; }
+.summary .md p { margin: 0 0 6px; }
+.summary .md p:last-child { margin-bottom: 0; }
+
+/* 공통 마크다운 렌더(.md) — LLM 답변·브리핑 등에서 표·볼드·목록을 예쁘게.
+   다크 테마 토큰을 그대로 쓰고, 첫/마지막 자식 마진을 죽여 말풍선에 깔끔히 들어가게 한다. */
+.md { font-size: 14px; line-height: 1.6; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 8px; }
+.md strong { font-weight: 700; color: var(--text); }
+.md em { font-style: italic; }
+.md ul, .md ol { margin: 6px 0 8px; padding-left: 20px; }
+.md li { margin: 2px 0; }
+.md li::marker { color: var(--muted); }
+.md h1, .md h2, .md h3, .md h4 { margin: 12px 0 6px; font-weight: 700; line-height: 1.3; }
+.md h1 { font-size: 17px; }
+.md h2 { font-size: 15px; }
+.md h3, .md h4 { font-size: 14px; }
+.md a { color: var(--accent); text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+.md code {
+  background: var(--panel-2); border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+}
+.md pre {
+  background: var(--panel-2); border-radius: 8px; padding: 10px 12px;
+  overflow-x: auto; margin: 8px 0;
+}
+.md pre code { background: none; padding: 0; }
+.md blockquote {
+  margin: 8px 0; padding: 2px 12px; border-left: 3px solid var(--border); color: var(--muted);
+}
+.md hr { border: 0; border-top: 0.5px solid var(--border); margin: 12px 0; }
+/* 표 — GFM */
+.md table { border-collapse: collapse; margin: 8px 0; font-size: 14px; width: 100%; }
+.md th, .md td { border: 0.5px solid var(--border); padding: 6px 10px; text-align: left; }
+.md th { background: var(--panel-2); font-weight: 700; }
+.md tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+
+/* 결과 카드 */
+.rc { background: var(--panel-2); border-radius: 10px; padding: 10px 12px; }
+/* 데모 상태 카드(opt-in 전 fake) — 성공/실패 아닌 '실제 반영 안 됨'을 뮤트 톤으로. */
+.rc-demo { background: var(--warn-bg); }
+.rc-demo .rc-head { color: var(--warn); }
+
+/* 설정 카드(2026-07-06) — '설정 보여줘'에 뜨는 지금 설정. 각 행=현재값, 하단 칩=대화 변경. */
+.set-card { background: var(--panel-2); border-radius: 12px; padding: 4px 0; margin-top: 4px; }
+.set-head {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+  font-size: 13px; font-weight: 500; color: var(--web, #8fd4ec);
+}
+.set-row {
+  display: flex; align-items: center; gap: 12px; padding: 11px 16px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.set-ic {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.set-ic .ti { font-size: 14px; }
+.set-ic-approve { background: var(--warn-bg); color: var(--warn); }
+.set-ic-mail { background: rgba(232, 138, 125, 0.14); color: #f0958a; }
+.set-ic-sched { background: rgba(142, 168, 255, 0.14); color: #9db4ff; }
+.set-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.set-title { font-size: 13px; color: var(--text); }
+.set-sub {
+  font-size: 11px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.set-state { font-size: 12px; color: var(--faint); flex-shrink: 0; }
+.set-state.on { color: #9db4ff; }
+.set-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 16px 10px;
+}
+.set-lead {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--faint); flex-shrink: 0;
+}
+.set-lead .ti { font-size: 13px; }
+
+/* 예약 리스트 카드(2026-07-06) — 행마다 종류 아이콘·다음 실행·주기·지금 실행·끄기. */
+.sch-card { background: var(--panel-2); border-radius: 12px; padding: 4px 0; margin-top: 4px; }
+.sch-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 16px;
+  font-size: 13px; font-weight: 500; color: #9db4ff;
+}
+.sch-count { margin-left: auto; font-size: 12px; color: var(--faint); font-weight: 400; }
+.sch-empty { padding: 6px 16px 12px; font-size: 13px; color: var(--muted); }
+.sch-row {
+  display: flex; align-items: center; gap: 11px; padding: 11px 16px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.sch-ic {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.sch-ic .ti { font-size: 15px; }
+.sch-ic-briefing { background: rgba(199, 174, 240, 0.14); color: #c7aef0; }
+.sch-ic-mail { background: rgba(232, 138, 125, 0.14); color: #f0958a; }
+.sch-ic-chat { background: rgba(142, 168, 255, 0.14); color: #9db4ff; }
+.sch-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sch-title {
+  font-size: 13px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sch-sub { font-size: 11px; color: var(--faint); }
+.sch-cadence {
+  font-size: 11px; color: #9db4ff; background: rgba(142, 168, 255, 0.1);
+  padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+}
+.sch-run {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  border: none; background: rgba(143, 212, 236, 0.12); color: #8fd4ec;
+  font-size: 12px; padding: 5px 10px; border-radius: 8px; cursor: pointer;
+  transition: background 0.12s;
+}
+.sch-run:hover { background: rgba(143, 212, 236, 0.2); }
+.sch-run:disabled { opacity: 0.5; cursor: default; }
+.sch-run .ti { font-size: 14px; }
+/* 지금 실행 직후 잠깐 뜨는 '실행됨' 인라인 표시(종 알림으로 결과가 감 — 채팅 안 씀). */
+.sch-ran {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  font-size: 12px; color: var(--ok); padding: 5px 10px;
+}
+.sch-ran .ti { font-size: 14px; }
+.sch-off {
+  border: none; background: transparent; color: var(--faint); cursor: pointer;
+  padding: 5px; display: inline-flex; flex-shrink: 0; border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+.sch-off:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.sch-off .ti { font-size: 16px; }
+
+/* 스킬 생성 미리보기 카드 (설계 11 — '○○ 스킬 만들어줘' 성공). 스킬=보라 sparkles 색 언어. */
+.skp-card {
+  background: var(--panel-2); border-radius: 12px; padding: 4px 0 10px;
+  margin-top: 4px; border: 0.5px solid rgba(199, 174, 240, 0.22);
+}
+.skp-head { display: flex; align-items: center; gap: 11px; padding: 12px 16px 10px; }
+.skp-ic {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(199, 174, 240, 0.14); color: #c7aef0;
+}
+.skp-ic .ti { font-size: 17px; }
+.skp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.skp-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.skp-sub {
+  font-size: 11px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.skp-badge {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  font-size: 11px; color: #c7aef0; background: rgba(199, 174, 240, 0.12);
+  padding: 3px 9px; border-radius: 10px;
+}
+.skp-badge .ti { font-size: 13px; }
+.skp-srctoggle {
+  display: flex; align-items: center; gap: 5px; width: 100%;
+  border: none; background: transparent; color: var(--faint); cursor: pointer;
+  font-size: 12px; padding: 4px 16px; text-align: left;
+}
+.skp-srctoggle:hover { color: var(--muted); }
+.skp-source {
+  margin: 4px 16px 2px; padding: 10px 12px; border-radius: 8px;
+  background: var(--panel); color: var(--muted); font-size: 11px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+.skp-actions { display: flex; gap: 8px; padding: 8px 16px 0; }
+
+/* 스킬 목록 카드 (2026-07-06 — '등록된 스킬 보여줘'). sch-card 구조 계승. */
+.skl-card { background: var(--panel-2); border-radius: 12px; padding: 4px 0; margin-top: 4px; }
+.skl-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 16px;
+  font-size: 13px; font-weight: 500; color: #c7aef0;
+}
+.skl-count { margin-left: auto; font-size: 12px; color: var(--faint); font-weight: 400; }
+.skl-empty { padding: 6px 16px 12px; font-size: 13px; color: var(--muted); }
+.skl-row {
+  display: flex; align-items: center; gap: 11px; padding: 11px 16px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.skl-ic {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(199, 174, 240, 0.14); color: #c7aef0;
+}
+.skl-ic .ti { font-size: 15px; }
+.skl-body {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  border: none; background: transparent; padding: 0; text-align: left; color: inherit;
+}
+.skl-clickable { cursor: pointer; border-radius: 8px; transition: opacity 0.12s; }
+.skl-clickable:hover { opacity: 0.72; }
+.skl-title {
+  font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.skl-tag {
+  font-size: 10px; color: var(--faint); background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px; border-radius: 8px; flex-shrink: 0; font-weight: 400;
+}
+.skl-sub {
+  font-size: 11px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.skl-run {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  border: none; background: rgba(143, 212, 236, 0.12); color: #8fd4ec;
+  font-size: 12px; padding: 5px 10px; border-radius: 8px; cursor: pointer;
+  transition: background 0.12s;
+}
+.skl-run:hover { background: rgba(143, 212, 236, 0.2); }
+.skl-run .ti { font-size: 14px; }
+.skl-off {
+  border: none; background: transparent; color: var(--faint); cursor: pointer;
+  padding: 5px; display: inline-flex; flex-shrink: 0; border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+.skl-off:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.skl-off .ti { font-size: 16px; }
+
+/* 기억 카드 (2026-07-06, 설계 13 — "나에 대해 뭘 알아": 선호·맥락 + 삭제) */
+.mem-card { background: var(--panel-2); border-radius: 12px; padding: 4px 0; margin-top: 4px; }
+.mem-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 16px;
+  font-size: 13px; font-weight: 500; color: #f0958a;
+}
+.mem-head-ctx { color: #9db4ff; border-top: 0.5px solid rgba(255, 255, 255, 0.05); }
+.mem-head-people { color: #c7aef0; border-top: 0.5px solid rgba(255, 255, 255, 0.05); }
+.mem-person-name { color: var(--text); font-weight: 500; }
+.mem-person-sum { color: var(--muted); }
+.mem-clear {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  border: none; background: transparent; color: var(--faint); cursor: pointer;
+  font-size: 11px; padding: 3px 6px; border-radius: 6px; transition: color 0.12s;
+}
+.mem-clear:hover { color: var(--text); }
+.mem-clear .ti { font-size: 13px; }
+.mem-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+.mem-text { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+.mem-ctx { color: var(--muted); }
+.mem-del {
+  border: none; background: transparent; color: var(--faint); cursor: pointer;
+  padding: 4px; display: inline-flex; flex-shrink: 0; border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+.mem-del:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.mem-del .ti { font-size: 15px; }
+
+/* 스킬 상세 패널 (2026-07-06 — 목록 행 클릭 시 우측에 SKILL.md 규격, 읽기 전용) */
+.skpanel-desc { font-size: 14px; color: var(--text); line-height: 1.55; margin-bottom: 14px; }
+.skpanel-run { margin: 14px 0 4px; }
+.skpanel-src-label {
+  margin-top: 18px; font-size: 11px; font-weight: 500; color: var(--faint);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.skpanel-body {
+  margin-top: 8px; padding: 12px 14px; border-radius: 10px; background: var(--panel-2);
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+}
+.skpanel-body h1, .skpanel-body h2, .skpanel-body h3 {
+  font-size: 13px; font-weight: 600; color: var(--text); margin: 10px 0 4px;
+}
+.skpanel-body p { margin: 4px 0; }
+.skpanel-body ul { margin: 4px 0; padding-left: 18px; }
+.skpanel-body code {
+  font-size: 12px; background: rgba(255, 255, 255, 0.06); padding: 1px 4px; border-radius: 4px;
+}
+
+/* 진행 보고 카드 (S3 회상 — 트랙 행 구조, 경과일=코드 계산) */
+/* 진행 보고 v3(3초 규칙): 결론=히어로 → 막힌 트랙+인라인 행동 → 완료는 접기. */
+.tl-verdict {
+  font-size: 15px; font-weight: 600; line-height: 1.5; letter-spacing: -0.1px;
+  color: var(--text); margin: 2px 0 10px;
+}
+.tl-tracks { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.tl-track { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; line-height: 1.45; }
+.tl-track .ti { font-size: 14px; flex: 0 0 auto; position: relative; top: 1px; }
+.tl-track .ti.tl-done { color: #7ec699; }
+.tl-track .ti.tl-doing { color: var(--accent); }
+.tl-track .ti.tl-wait { color: #e0b060; }
+.tl-track-name { color: var(--text); font-weight: 500; flex: 0 0 auto; max-width: 160px; }
+.tl-track-note { color: var(--muted); flex: 1; }
+.tl-elapsed { flex: 0 0 auto; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tl-elapsed.tl-stale { color: #e0b060; font-weight: 600; }
+/* 막힌(7일+ 정지) 트랙 — 앰버 배경으로 살짝 들어올리고, 그 자리에서 촉구 초안 버튼. */
+.tl-track-stale {
+  background: rgba(224, 176, 96, 0.09); border-radius: 8px;
+  padding: 5px 8px; margin: 0 -8px;
+}
+.tl-nudge {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: #e0b060; cursor: pointer;
+  background: none; border: 1px solid rgba(224, 176, 96, 0.45); border-radius: 8px;
+  padding: 2px 8px;
+}
+.tl-nudge:hover { background: rgba(224, 176, 96, 0.16); }
+.tl-donetoggle {
+  display: inline-flex; align-items: center; gap: 5px; margin-bottom: 8px;
+  font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0;
+}
+.tl-donetoggle:hover { color: var(--text); }
+.tl-donetoggle .tl-done { color: #7ec699; }
+.tl-events { display: flex; flex-direction: column; gap: 5px; }
+.tl-event { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.45; }
+.tl-date { color: var(--muted); flex: 0 0 42px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tl-who { color: var(--accent); flex: 0 0 auto; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-what { color: var(--text); flex: 1; }
+.tl-next { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--text); }
+.rc-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 8px;
+}
+.rc-head .ti { font-size: 14px; }
+/* 접기/펼치기 토글 헤더(사용자 요청 2026-07-07) — 카드 기본 접힘, 클릭해 펼침. */
+.rc-head-toggle {
+  width: 100%; border: none; background: transparent; cursor: pointer;
+  padding: 0; text-align: left; font: inherit; color: var(--accent);
+}
+.rc-head-toggle:hover { color: var(--text); }
+.rc-head-toggle:hover .rc-head-chev { color: var(--text); }
+.rc-head-chev { color: var(--muted); margin-left: 6px; font-size: 14px; }
+/* 접힘 상태 — 헤더만 남으니 아래 margin 제거(빈 공간 방지). */
+.rc-collapsed .rc-head { margin-bottom: 0; }
+.rc-count {
+  margin-left: auto; font-size: 11px; color: var(--muted);
+  background: var(--bg); border-radius: 8px; padding: 1px 7px;
+}
+/* count가 margin-left:auto로 오른쪽 끝에 붙는데, 그 뒤 chevron이 오게 count의 auto 해제. */
+.rc-head-toggle .rc-count { margin-left: auto; }
+.rc-rows { display: flex; flex-direction: column; gap: 6px; }
+.rc-row { display: flex; align-items: center; gap: 10px; }
+.rc-clickable { cursor: pointer; padding: 4px 6px; margin: -2px -6px; border-radius: 6px; }
+.rc-clickable:hover { background: var(--bg); }
+.rc-arrow { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+/* 뉴스레터 등 후속조치 없는 항목은 흐리게(개선안 F) — 요약과 리스트의 판단 일치. */
+.rc-muted { opacity: 0.68; }
+/* 긴급도 태그(개선안 F) — 긴급(빨강 계열)/후속(파랑 계열) pill. */
+.rc-tag {
+  flex-shrink: 0; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; border: 1px solid transparent;
+}
+.rc-tag-urgent {
+  color: var(--tag-urgent-text);
+  background: var(--tag-urgent-bg);
+  border-color: var(--tag-urgent-border);
+}
+.rc-tag-follow {
+  color: var(--tag-follow-text);
+  background: var(--tag-follow-bg);
+  border-color: var(--tag-follow-border);
+}
+
+/* 메일 사이드 패널 (원문 + 추가 질문) */
+.mailpanel {
+  width: 400px; flex-shrink: 0; display: flex; flex-direction: column;
+  height: 100%; min-height: 0;
+}
+.mailpanel-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; border-bottom: 0.5px solid var(--border);
+}
+.mailpanel-title { flex: 1; min-width: 0; }
+.mailpanel-subject {
+  font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mailpanel-from { font-size: 11px; color: var(--muted); }
+.mailpanel-link {
+  color: var(--accent); font-size: 16px; text-decoration: none; flex-shrink: 0;
+}
+/* 본문+Q&A가 함께 스크롤되는 영역 (입력창은 아래 고정) */
+.mailpanel-scroll { flex: 1; overflow-y: auto; padding: 8px 14px 12px; }
+.mailpanel-bodytoggle {
+  width: 100%; text-align: left; background: transparent; border: none;
+  color: var(--muted); font-size: 12px; padding: 6px 0; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+}
+.mailpanel-bodytoggle:hover { color: var(--text); }
+.mailpanel-body { padding: 0 0 8px; }
+.mailpanel-loading, .mailpanel-error { font-size: 14px; color: var(--muted); }
+.mailpanel-text {
+  font-size: 15px; line-height: 1.6; color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+/* 강조 블록(개선안 C) — 계정/조치에 필요한 핵심을 스캔·복사하기 쉽게 추출한 파란 블록.
+   무엇을 강조할지는 요약·에이전트(LLM)가 판단해 이 클래스로 감싼다(UI는 표현만). */
+.highlight-block {
+  margin: 12px 0; padding: 12px 14px; border-radius: 10px;
+  background: var(--overlay-highlight-bg);
+  border: 1px solid var(--overlay-highlight-border);
+  color: var(--overlay-highlight-text);
+  font-size: 14px; line-height: 1.55; word-break: break-word;
+}
+/* 파일 원문(추출 텍스트) — 작고 흐리게, 스크롤 가능한 영역 안에서 */
+.mailpanel-rawtext {
+  font-size: 12px; line-height: 1.6; color: var(--muted);
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 280px; overflow-y: auto;
+  background: rgba(255,255,255,0.03); border-radius: 6px; padding: 8px 10px;
+}
+/* 상세 패널 공통 행(일정/회의실/스케줄) — 아이콘 + 라벨 */
+.detail-rows { display: flex; flex-direction: column; gap: 12px; }
+.detail-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; color: var(--text);
+}
+.detail-row i { color: var(--muted); font-size: 16px; flex-shrink: 0; }
+.detail-row .detail-label { color: var(--muted); width: 64px; flex-shrink: 0; }
+
+.mailpanel-a { font-size: 15px; line-height: 1.6; margin-top: 5px; color: var(--text); }
+.mailpanel-ask {
+  display: flex; gap: 6px; padding: 10px 14px; border-top: 0.5px solid var(--border);
+}
+.mailpanel-ask input {
+  flex: 1; background: var(--panel-2); border: 0.5px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 7px 10px; font-size: 13px; outline: none;
+}
+.mailpanel-ask button {
+  border: none; background: var(--accent); color: #fff; font-size: 13px;
+  border-radius: 8px; padding: 0 12px; cursor: pointer;
+}
+.mailpanel-ask button:disabled { opacity: 0.5; cursor: default; }
+.rc-avatar {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-bg); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500;
+}
+.rc-avatar-icon { background: var(--bg); color: var(--muted); }
+.rc-avatar-icon .ti { font-size: 15px; }
+/* 카드 아바타 도메인 컬러 — 바 신호 아이콘(bsig)과 같은 언어(디자인 협의 2026-07-04). */
+.rc-av-event_list { background: rgba(142, 168, 255, 0.14); color: #9db4ff; }
+.rc-av-mail_list { background: rgba(232, 138, 125, 0.14); color: #f0958a; }
+.rc-av-file_list, .rc-av-open_documents, .rc-av-todo_list { background: rgba(168, 230, 184, 0.14); color: #9fe0b4; }
+.rc-av-room_list, .rc-av-room_bookings { background: rgba(183, 156, 224, 0.14); color: #c7aef0; }
+/* 파일 브랜드 아이콘(SVG)은 배경 없이 아이콘 자체가 보이게 */
+.rc-avatar-file { background: transparent; }
+
+/* 포커스 패널 하단 Q&A 스레드(공통, FocusQAThread) — 원문 요약 아래에 누적.
+   아바타 언어는 카드(.rc-avatar)와 동일하되 패널 폭에 맞춰 24px로 줄인다. */
+.focus-qa { margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 14px; }
+.focus-qa-pair { display: flex; flex-direction: column; gap: 8px; }
+.focus-qa-row { display: flex; gap: 8px; align-items: flex-start; }
+.focus-qa .rc-avatar { width: 24px; height: 24px; }
+.focus-qa .rc-avatar .ti { font-size: 13px; }
+.focus-qa-q { font-size: 13px; line-height: 1.5; color: var(--text); padding-top: 3px; }
+.focus-qa-a { font-size: 13px; line-height: 1.55; color: var(--muted); padding-top: 1px; min-width: 0; }
+.focus-qa-a p { margin: 0 0 6px; }
+.focus-qa-a p:last-child { margin-bottom: 0; }
+.focus-qa-loading { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+
+/* 근거 pill 줄(설계 10 S2) — 답변 아래 "이 답이 어디서 왔나". 도메인 색 = bsig/카드 아바타.
+   UX(2026-07-06): Claude/ChatGPT식 — 겹친 아이콘 스택을 클릭하면 아래로 리스트가 펼쳐진다. */
+.src-pills { margin-top: 8px; }
+/* 접힌 헤더 = 겹친 아이콘 스택 + "근거 N" + 셰브런. 한 줄, 클릭으로 토글. */
+.src-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: none; padding: 2px 4px; margin-left: -4px;
+  border-radius: 8px; cursor: pointer; color: var(--muted);
+  transition: background 0.12s;
+}
+.src-toggle:hover { background: rgba(255, 255, 255, 0.04); }
+.src-stack { display: inline-flex; align-items: center; }
+/* 스택 안에서 아이콘을 살짝 겹친다(첫 개 빼고 왼쪽 겹침) — Claude식 아바타 스택. */
+.src-stack .src-pill { margin-left: -8px; box-shadow: 0 0 0 2px var(--bg, #16161a); }
+.src-stack .src-pill:first-child { margin-left: 0; }
+.src-toggle-label { font-size: 12px; }
+.src-chevron { font-size: 13px; transition: transform 0.15s; }
+.src-chevron.is-up { transform: rotate(180deg); }
+/* 각 근거 아이콘 원 — 접힘 스택·펼침 리스트 공용. 도메인 색은 .src-<kind>가 준다. */
+.src-pill {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; padding: 0;
+}
+.src-pill .ti { font-size: 13px; }
+/* 파일 확장자 컬러 로고(Word·Excel·PPT·PDF)는 배경 없이 로고 자체가 색을 낸다. */
+.src-pill.src-brand { background: transparent; }
+/* 펼친 근거 리스트 — 항목마다 아이콘 + 종류 + 제목, 클릭 가능하면 원문으로. */
+.src-list { list-style: none; margin: 6px 0 2px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.src-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: none; border: none; padding: 5px 8px; border-radius: 8px;
+  cursor: pointer; color: var(--text); transition: background 0.12s;
+}
+.src-item:hover:not(.is-static) { background: rgba(255, 255, 255, 0.05); }
+.src-item.is-static { cursor: default; }
+.src-item-icon {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.src-item-icon .ti { font-size: 12px; }
+.src-item-kind { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+/* 제목 + 스니펫 세로 묶음 — 스니펫 없으면 제목 한 줄과 동일하게 보인다. */
+.src-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.src-item-title {
+  font-size: 13px; min-width: 0; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 원문 발췌 한 줄(리치 출력) — 근거 pill을 펼쳤을 때만 보이는 인용/요약. */
+.src-item-snippet {
+  font-size: 11.5px; color: var(--muted); line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.src-snip-tag {
+  display: inline-block; margin-right: 5px; padding: 0 4px; border-radius: 4px;
+  font-size: 10px; line-height: 15px; vertical-align: 1px;
+  background: rgba(255, 255, 255, 0.08); color: var(--muted);
+}
+.src-item-go { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+/* 도메인 색 = 아이콘 원(스택 .src-pill·리스트 .src-item-icon)이 부모 종류 클래스에서 상속.
+   .src-item은 종류 클래스만 나르고 배경은 안 낸다(버튼 전체가 물들면 안 됨). */
+.src-mail { color: #f0958a; }
+.src-mail > .src-item-icon, .src-pill.src-mail { background: rgba(232, 138, 125, 0.14); }
+.src-calendar { color: #9db4ff; }
+.src-calendar > .src-item-icon, .src-pill.src-calendar { background: rgba(142, 168, 255, 0.14); }
+.src-file { color: #9fe0b4; }
+.src-file > .src-item-icon, .src-pill.src-file { background: rgba(168, 230, 184, 0.14); }
+.src-room { color: #c7aef0; }
+.src-room > .src-item-icon, .src-pill.src-room { background: rgba(183, 156, 224, 0.14); }
+.src-web { color: #8fd4ec; }
+.src-web > .src-item-icon, .src-pill.src-web { background: rgba(120, 200, 230, 0.14); }
+.src-todo { color: #9fe0b4; }
+.src-todo > .src-item-icon, .src-pill.src-todo { background: rgba(168, 230, 184, 0.14); }
+.rc-text { min-width: 0; flex: 1; }
+.rc-title { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-snippet { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.rc-doc-row { display: flex; align-items: center; gap: 8px; }
+
+/* 메일 초안 카드 — 본문 + 보내기 버튼 */
+.draft-body {
+  font-size: 13px; color: var(--text); line-height: 1.6; white-space: pre-wrap;
+  margin: 8px 0; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px;
+  max-height: 220px; overflow-y: auto;
+}
+.draft-send {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 7px; cursor: pointer;
+}
+.draft-send:hover { filter: brightness(1.08); }
+
+/* 메일 초안 — 메인엔 한 줄 버튼만(본문은 우측 패널) */
+.draft-chip {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: var(--panel-2); border: 0.5px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font-size: 13px; cursor: pointer; text-align: left;
+}
+.draft-chip:hover:not(.is-static) { border-color: var(--accent); }
+.draft-chip .ti:first-child { color: var(--accent); font-size: 15px; flex-shrink: 0; }
+.draft-chip-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.draft-chip .ti:last-child { color: var(--muted); flex-shrink: 0; }
+.draft-chip.is-static { cursor: default; }
+
+/* 설정 패널 — 토글 그룹 + 스위치 */
+.settings-group {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-bottom: 14px; margin-bottom: 14px; border-bottom: 0.5px solid var(--border);
+}
+.settings-group:last-child { border-bottom: none; margin-bottom: 0; }
+/* 자동 초안 확인 주기 선택(1·5·30분) */
+.settings-interval { display: flex; align-items: center; gap: 10px; padding: 6px 0 2px 2px; }
+.settings-interval-label { font-size: 12.5px; color: var(--muted); }
+.settings-interval-opts { display: flex; gap: 6px; }
+.settings-interval-btn {
+  font-size: 12.5px; padding: 4px 12px; border-radius: 8px; cursor: pointer;
+  background: var(--panel-2); border: 0.5px solid var(--border); color: var(--text);
+}
+.settings-interval-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.settings-toggle {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  background: none; border: none; padding: 8px 0; cursor: pointer; text-align: left;
+}
+.settings-toggle-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.settings-toggle-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.settings-toggle-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.settings-switch {
+  flex-shrink: 0; width: 38px; height: 22px; border-radius: 11px;
+  background: var(--border); position: relative; transition: background 0.15s;
+}
+.settings-switch.on { background: var(--accent); }
+.settings-knob {
+  position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 0.15s;
+}
+.settings-switch.on .settings-knob { transform: translateX(16px); }
+
+/* 자동 메일 비서 — '지금 한번' 버튼 + 초안함 */
+.settings-run { display: flex; align-items: center; gap: 10px; padding: 8px 0 2px; }
+.settings-run-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel-2); border: 0.5px solid var(--border); border-radius: 8px;
+  padding: 7px 12px; color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.settings-run-btn:disabled { opacity: 0.6; cursor: default; }
+/* 예약 패널의 '지금 브리핑 보기' — 프리셋 칩 아래 전체폭, accent로 강조(즉시 실행). */
+.settings-run-btn:hover:not(:disabled) { border-color: var(--accent); }
+.settings-run-btn:disabled { opacity: 0.6; cursor: default; }
+.settings-run-msg { font-size: 11.5px; color: var(--muted); }
+/* 예약 등록 후 '이렇게 이해했어요' plan 미리보기 (design 07 S5) */
+.plan-preview {
+  margin: 8px 0 4px; border: 0.5px solid var(--accent); border-radius: 10px;
+  background: var(--accent-bg); overflow: hidden;
+}
+.plan-preview-head {
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  border-bottom: 0.5px solid var(--accent-bg);
+}
+.plan-preview-x {
+  margin-left: auto; background: none; border: 0; color: var(--muted);
+  cursor: pointer; padding: 2px; display: inline-flex;
+}
+.plan-preview-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
+.plan-preview-row { display: flex; gap: 10px; font-size: 12px; color: var(--text); }
+.plan-preview-k { min-width: 34px; color: var(--muted); font-weight: 600; }
+/* 예약작업 결과 우측 상세 (S10) — answer 요약 + tool_results 카드 */
+.job-result-answer { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 12px; }
+.job-result-cards { display: flex; flex-direction: column; gap: 8px; }
+/* followup 칩 + 클릭 시 그 아래 초안 인라인 펼침 (S11 옵션1) */
+.job-result-followups { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.job-result-draft {
+  margin-top: 8px; border: 0.5px solid var(--accent); border-radius: 10px;
+  background: var(--accent-bg); padding: 12px; animation: jobDraftIn 0.18s ease;
+}
+@keyframes jobDraftIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.draft-embedded { display: flex; flex-direction: column; gap: 8px; }
+.draft-embedded-subject { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.draft-embedded-actions { margin-top: 6px; }
+
+/* 추천 칩 */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* 후속 액션 바(2026-07-06) — '작업 실행' 후속은 각진 버튼으로(진행 액션=버튼, Material/
+   Assistant 원칙). '다음' 레이블 + 첫 액션 primary 강조. 진행보고 카드 각(8px)과 통일. */
+.actionbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.actionbar-lead {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--faint); flex-shrink: 0;
+}
+.actionbar-lead i { font-size: 13px; }
+.action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12); background: transparent;
+  color: var(--text); font-size: 13px; padding: 7px 14px; border-radius: 8px;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.action-btn i { font-size: 14px; }
+.action-btn:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.2); }
+/* 첫 액션 = primary(파란 solid) — 뷰당 accent 하나만(CDS 절제 원칙). 텍스트는 짙은 남색.
+   개선안 F: primary에 은은한 accent 글로우로 '가장 급한 다음 행동'을 살짝 띄운다. */
+.action-btn.primary {
+  border-color: transparent; background: var(--accent); color: #0f1420; font-weight: 500;
+  box-shadow: 0 4px 14px rgba(74, 137, 255, 0.4);
+}
+.action-btn.primary:hover { background: #6f9bf2; }
+
+/* 승인 카드 */
+/* 승인 카드 — Claude/ChatGPT 스타일로 컴팩트하게 */
+.approval {
+  border: 0.5px solid var(--border); background: rgba(255,255,255,0.02);
+  border-radius: 10px; padding: 10px 12px;
+}
+.approval-head {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px;
+}
+.approval-head .ti { font-size: 13px; color: var(--warn); }
+.approval-target { font-size: 13px; color: var(--text); margin-bottom: 2px; }
+.approval-preview {
+  font-size: 12px; color: var(--muted); background: var(--bg);
+  border-radius: 6px; padding: 6px 8px; margin: 4px 0; max-height: 88px; overflow-y: auto;
+  white-space: pre-wrap;
+}
+.approval-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.approval-meta .ti { font-size: 12px; }
+/* 버튼: 작게, 우측 정렬 (가로 꽉 채우지 않음) */
+.approval-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+.approval-actions button {
+  border: 0.5px solid var(--border); background: transparent; color: var(--muted);
+  font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 7px; cursor: pointer;
+}
+.approval-actions button:hover { color: var(--text); background: var(--panel-2); }
+.approval-actions .approve {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.approval-actions .approve:hover { background: var(--accent); filter: brightness(1.08); color: #fff; }
+.approval-actions button:disabled { opacity: 0.5; cursor: default; }
+
+/* 작업 과정 trace (C 스타일 — 리스트 + 상세 펼침, §6 관찰성) */
+.trace { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.trace summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 4px; }
+.trace summary::-webkit-details-marker { display: none; }
+.trace summary::before { content: "›"; margin-right: 2px; }
+.trace[open] summary::before { content: "⌄"; }
+.trace summary b { font-weight: 600; color: var(--text); }
+.trace-flow { color: var(--faint); }
+.trace-list {
+  margin: 8px 0 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.trace-row + .trace-row { border-top: 1px solid var(--border); }
+.trace-head {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: none; border: 0; cursor: pointer;
+  font: inherit; color: var(--text); text-align: left;
+}
+.trace-head:disabled { cursor: default; }
+.trace-head:not(:disabled):hover { background: rgba(255, 255, 255, 0.05); }
+.trace-row.muted .trace-head { color: var(--muted); }
+.trace-head .ti { font-size: 15px; color: var(--accent); flex-shrink: 0; }
+.trace-row.muted .trace-head .ti { color: var(--faint); }
+.trace-label { flex: 1; }
+.trace-chev { color: var(--faint) !important; font-size: 14px !important; }
+.trace-detail {
+  padding: 0 10px 9px 32px; color: var(--muted); line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+.icon-btn.active { background: var(--accent-bg); color: var(--accent); }
+/* 자동 승인 켜짐 — 초록(주의 환기) */
+
+/* 예약 작업 패널 */
+.jobs { border-top: 0.5px solid var(--border); padding: 12px 16px; }
+.jobs-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 14px; font-weight: 500; margin-bottom: 10px;
+}
+.jobs-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+/* 스킬로 등록 — /skills 목록을 칩으로(클릭 시 [skill:name] + 권장 시간 자동). design 08 SK3 */
+.skill-picker { display: flex; flex-direction: column; gap: 6px; }
+.skill-picker-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; color: var(--accent);
+}
+.skill-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 칩 + [보기] 버튼 한 쌍 — 붙어 보이되 각각 클릭 가능 */
+.skill-chip-group { display: inline-flex; align-items: stretch; }
+.skill-chip {
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
+  border-right: 0;
+}
+.skill-chip i { color: var(--accent); }
+.skill-view-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0.5px solid var(--border); background: var(--panel-2); color: var(--muted);
+  border-top-right-radius: 16px; border-bottom-right-radius: 16px;
+  padding: 0 10px; cursor: pointer; font-size: 14px;
+}
+.skill-view-btn:hover { color: var(--accent); border-color: rgba(91,141,239,0.4); }
+/* 스킬 문서(SKILL.md 원문) 보기 팝업 */
+.skill-modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.skill-modal {
+  width: min(680px, 92%); max-height: 80vh; display: flex; flex-direction: column;
+  background: var(--panel); border: 0.5px solid var(--border); border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5); overflow: hidden;
+}
+.skill-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 0.5px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.skill-modal-head i { color: var(--accent); margin-right: 4px; }
+.skill-modal-body {
+  margin: 0; padding: 16px; overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px; line-height: 1.65; color: var(--muted);
+  white-space: pre-wrap; word-break: break-word;
+}
+/* 스킬 실행 결과 카드 (design 08 SK4) — headline + summary + action 목록 */
+.skill-card { display: flex; flex-direction: column; gap: 10px; }
+.skill-card-headline { font-size: 15px; font-weight: 700; color: var(--text); }
+.skill-card-summary { font-size: 13px; line-height: 1.6; color: var(--muted); }
+.skill-card-actions { display: flex; flex-direction: column; gap: 8px; }
+.skill-action {
+  border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  background: var(--panel-2); display: flex; flex-direction: column; gap: 5px;
+}
+.skill-action-head { display: flex; align-items: center; gap: 7px; }
+.skill-action-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+/* 부모(.skill-action)에 prio-*가 있거나 점 자체에 있을 때 모두 색을 입힌다(범례는 점에 직접 붙임) */
+.prio-high .skill-action-dot, .skill-action-dot.prio-high { background: var(--down); }
+.prio-medium .skill-action-dot, .skill-action-dot.prio-medium { background: var(--warn); }
+.prio-low .skill-action-dot, .skill-action-dot.prio-low { background: var(--muted); }
+/* 우선순위 범례 — 색점이 뭘 뜻하는지 한 줄로 */
+.skill-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); }
+.skill-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+/* 주간보고 등 문서형 스킬의 PDF 열기 버튼 */
+.skill-pdf-btn { align-self: flex-start; }
+.skill-action-what { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+.skill-action-when { font-size: 11.5px; color: var(--muted); flex-shrink: 0; }
+.skill-action-why { font-size: 12px; color: var(--muted); padding-left: 14px; }
+.skill-action-chip { align-self: flex-start; margin-left: 14px; margin-top: 2px; }
+.jobs-caret { font-size: 13px; color: var(--muted); margin-right: 4px; }
+/* 알림 패널 — 종 클릭. 카테고리별(유동적) 접기/펼치기 + 카운트, 그룹 안은 시계순 카드. */
+.notif-groups { display: flex; flex-direction: column; gap: 12px; }
+.notif-group { display: flex; flex-direction: column; gap: 8px; }
+.notif-group-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: none; border: 0; cursor: pointer; color: var(--text); padding: 2px 0;
+}
+.notif-caret { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+.notif-group-icon { color: var(--accent); font-size: 15px; flex-shrink: 0; }
+.notif-group-label { flex: 1; font-size: 13px; font-weight: 600; }
+.notif-group-count {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--panel-2); border-radius: 9px; padding: 1px 7px; min-width: 18px; text-align: center;
+}
+.notif-group-count.is-zero { opacity: 0.4; }
+.notif-group-head:disabled { cursor: default; }
+.notif-list { display: flex; flex-direction: column; gap: 8px; }
+.notif-card {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: var(--panel-2); border: 0.5px solid var(--border); border-radius: 10px;
+  padding: 12px 12px; cursor: pointer; color: var(--text);
+}
+.notif-card:hover { border-color: var(--accent); }
+.notif-card-icon { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+.notif-card-body { flex: 1; min-width: 0; }
+.notif-card-title {
+  font-size: 13.5px; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.notif-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.notif-card-time { font-size: 11.5px; color: var(--muted); flex-shrink: 0; }
+.notif-card-arrow { color: var(--muted); font-size: 15px; flex-shrink: 0; }
+
+/* 안 읽음 표시 — 카드 왼쪽 빨간점. 읽으면 .on이 빠져 투명해지지만 자리는 남겨 정렬 유지. */
+.notif-card-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: transparent; transition: background 0.2s;
+}
+.notif-card-dot.on { background: #ff3b30; box-shadow: 0 0 0 2px rgba(255, 59, 48, 0.18); }
+/* 안 읽은 카드는 제목을 또렷하게(읽은 것과 위계 구분). */
+.notif-card.is-unread .notif-card-title { font-weight: 700; }
+.notif-card.is-unread { border-color: color-mix(in srgb, #ff3b30 30%, var(--border)); }
+/* 그룹 헤더의 안 읽음 수 — 빨간 뱃지(전체 수 앞에). 다 읽으면 렌더 안 됨. */
+.notif-group-unread {
+  font-size: 11px; font-weight: 700; color: #fff; background: #ff3b30;
+  border-radius: 9px; padding: 1px 7px; min-width: 18px; text-align: center;
+}
+
+/* 하위 그룹(예약 잡별) — '완료된 작업' 아래 한 단 들여써 계층을 표현(2026-07-09). */
+.notif-subs { display: flex; flex-direction: column; gap: 6px; padding-left: 14px; margin-top: 2px; }
+.notif-sub { display: flex; flex-direction: column; gap: 6px; }
+.notif-sub-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: none; border: 0; cursor: pointer; color: var(--text); padding: 2px 0;
+}
+.notif-sub-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; opacity: 0.85; }
+.notif-sub-label { flex: 1; font-size: 12.5px; font-weight: 500; }
+
+/* 잡 펼침 결과(브리핑 날짜별 / 자동 초안 리스트) */
+.jobs-results { padding: 2px 0 6px 12px; display: flex; flex-direction: column; gap: 4px; }
+.jobs-result {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: var(--panel-2); border: 0.5px solid var(--border); border-radius: 8px;
+  padding: 9px 10px; cursor: pointer; color: var(--text); font-size: 12.5px;
+}
+.jobs-result:hover { border-color: var(--accent); }
+.jobs-result > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jobs-result .ti:first-child { color: var(--accent); flex-shrink: 0; }
+.jobs-result-arrow { color: var(--muted); flex-shrink: 0; }
+.jobs-form input, .jobs-form select {
+  background: var(--panel-2); border: 0.5px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none;
+}
+.jobs-row { display: flex; gap: 8px; }
+.jobs-row input[type="time"] { flex: 1; }
+.jobs-row select { flex: 1; }
+.jobs-add {
+  border: none; background: var(--accent); color: #fff; font-weight: 500;
+  border-radius: 8px; padding: 0 16px; font-size: 13px; cursor: pointer;
+}
+.jobs-add:disabled { opacity: 0.5; cursor: default; }
+.jobs-list { display: flex; flex-direction: column; gap: 6px; }
+.jobs-empty { font-size: 13px; color: var(--muted); padding: 8px 0; }
+.jobs-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel-2); border-radius: 8px; padding: 8px 10px;
+}
+.jobs-item-text { flex: 1; min-width: 0; }
+.jobs-req { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jobs-meta { font-size: 11px; color: var(--muted); }
+
+/* 로딩 — 작업 중: 헤더(스피너+무엇을) + 실제 도구 단계 목록(2026-07-07).
+   shimmer 진행 바는 번잡해서 제거(사용자 피드백) — 대신 진짜 실행한 단계를 보여준다. */
+.loading { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--muted); }
+.loading-head { display: flex; align-items: center; gap: 8px; }
+.loading-head .spin { color: var(--progress-accent); }
+.loading-label { color: var(--text); font-weight: 500; }
+/* 실시간 단계 목록 — 완료(✓ 초록)·진행 중(스피너). 각 줄 = 실제 도구 이벤트(거짓 없음). */
+.live-steps {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-left: 24px; /* 헤더 스피너와 라벨 정렬 */
+}
+.live-step {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; line-height: 1.5;
+  animation: liveStepIn 0.22s ease;
+}
+.live-step-ic { font-size: 14px; flex-shrink: 0; }
+.live-step.done { color: var(--muted); }
+.live-step.done .live-step-ic { color: var(--step-done); }
+.live-step.doing { color: var(--text); }
+.live-step.doing .live-step-ic { color: var(--progress-accent); }
+/* 결과 건수 — 흐리게, 라벨 옆(예: "일정 조회 · 7건"). */
+.live-step-count { color: var(--faint); font-size: 12px; }
+.live-step-reps { color: var(--faint); font-size: 12px; opacity: 0.8; }
+@keyframes liveStepIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: none; }
+}
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 펼침 등장 — 오브 쪽 모서리에서 미닫이처럼 옆으로 '펼쳐진다'(사용자 결정 2026-07-04:
+   페이드 팝은 경망스럽다 → 오른쪽(오브)에서 왼쪽으로 자연스럽게). 미닫이(drawerIn)와
+   같은 easing으로 창 전체가 한 동작 언어. clip-path 리빌 — 투명창·라운딩(18px) 안전,
+   오브는 제자리(창 우측 가장자리 고정)라 정말 오브에서 자라나는 것처럼 보인다. */
+.launcher.orb-expand-right {
+  animation: orbUnfoldR 0.38s cubic-bezier(0.32, 0.72, 0.35, 1);
+}
+.launcher.orb-expand-left {
+  animation: orbUnfoldL 0.38s cubic-bezier(0.32, 0.72, 0.35, 1);
+}
+@keyframes orbUnfoldR {
+  0% { opacity: 0.35; clip-path: inset(0 0 0 calc(100% - 56px) round 18px); }
+  100% { opacity: 1; clip-path: inset(0 round 18px); }
+}
+@keyframes orbUnfoldL {
+  0% { opacity: 0.35; clip-path: inset(0 calc(100% - 56px) 0 0 round 18px); }
+  100% { opacity: 1; clip-path: inset(0 round 18px); }
+}
+/* 접힘 = 펼침의 역재생 — 오브 쪽으로 접힌 뒤(0.3s) 창이 줄어든다(App.collapseToOrb가
+   모션 끝을 기다렸다가 orb 모드로 전환). forwards로 접힌 끝 상태를 유지해 깜빡임 방지. */
+.launcher.orb-expand-right.folding {
+  animation: orbFoldR 0.3s cubic-bezier(0.32, 0.72, 0.35, 1) forwards;
+}
+.launcher.orb-expand-left.folding {
+  animation: orbFoldL 0.3s cubic-bezier(0.32, 0.72, 0.35, 1) forwards;
+}
+@keyframes orbFoldR {
+  0% { opacity: 1; clip-path: inset(0 round 18px); }
+  100% { opacity: 0.25; clip-path: inset(0 0 0 calc(100% - 56px) round 18px); }
+}
+@keyframes orbFoldL {
+  0% { opacity: 1; clip-path: inset(0 round 18px); }
+  100% { opacity: 0.25; clip-path: inset(0 calc(100% - 56px) 0 0 round 18px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launcher.orb-expand-right, .launcher.orb-expand-left,
+  .launcher.orb-expand-right.folding, .launcher.orb-expand-left.folding { animation: none; }
+}
+
+/* ── Floating orb = LED 전광판(plan-led-orb, 목업 v7 확정 2026-07-04).
+   몸=얇은 림(3px)+검은 LED 패널 원. 모든 정보·성격은 OrbLed(canvas 도트)가 그린다.
+   호버 o_o/클릭 >_< 표정도 JS(OrbLed)가 처리 — CSS 얼굴 교체 규칙은 은퇴. ── */
+.orb {
+  width: 80px; height: 80px; padding: 0; border: none; cursor: pointer;
+  flex: none; /* 피크(말풍선) flex 행에서 쥐어짜여 타원이 되는 것 방지 — 원은 불변 */
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: grab; /* 드래그는 JS로(app-region:drag는 click을 막아서 뺌) */
+  border-radius: 50%;
+  background: linear-gradient(160deg, #3c3e4a, #262832); /* 림 — 굵은 베젤 기각(목업 v3) */
+  /* 바깥 그림자(box-shadow)는 투명창서 검은 윤곽을 만든다 → 안쪽 광택만. 떠 있는 그림자는 OS가. */
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.4);
+}
+/* LED 패널 — 림 안쪽 검은 원, canvas가 도트를 그린다. */
+.orb-led-panel {
+  position: absolute; inset: 3px; border-radius: 50%; overflow: hidden;
+  background: #0b0c0f; pointer-events: none;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.9);
+}
+.orb-led-panel canvas { display: block; width: 100%; height: 100%; }
+/* 유리 반사 한 겹 — 패널 위(전광판에 유리 덮개 씌운 느낌). */
+.orb-led-gloss {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0) 40%);
+}
+/* 림 컬러링(사용자 요청 2026-07-13) — 채팅바 시리 링과 같은 팔레트의 conic 링을 오브
+   림(바깥 2.5px)에 상시로. 구현은 .launcher.glow-active::before와 동일한 padding+mask
+   링(원형이라 라운딩 틈 없음). ::before는 첫 자식이라 신호 링(::after)·패널보다 아래에
+   깔린다 — 신호가 뜨면 신호 색이 위를 덮는 기존 문법 유지. 평소엔 정적(절제 원칙 —
+   움직임은 의미 있을 때만), busy(작업 중)일 때만 런처처럼 천천히 회전한다. */
+.orb::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  padding: 2.5px; /* = 링 두께(림 3px 안쪽) */
+  background: conic-gradient(
+    from var(--mb-angle, 0deg),
+    #4a89ff, #7c5cff, #ff4d9d, #ffb84a, #4ad6c8, #4a89ff
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.9;
+  pointer-events: none;
+}
+.orb.busy::before { animation: mb-siri-rotate 3.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .orb.busy::before { animation: none; }
+}
+/* 창 높이 88px에 오브 80px — 1.1배는 상단이 창 밖으로 잘린다 → 1.06배, 이동 없음. */
+.orb:not(.dragging):hover { transform: scale(1.06); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.orb:not(.dragging):active { transform: scale(0.93); transition-duration: 0.08s; }
+/* 드래그 중 — 살짝 커짐(들고 이동). 점선 링은 사용자 피드백으로 제거(2026-07-04). */
+.orb.dragging { transform: scale(1.03) !important; cursor: grabbing; transition: transform 0.12s; }
+/* (.orb.dim·.orb.pulse 은퇴 2026-07-13 — 창 분리 전 App이 오브를 직접 그리던 시절의
+   잔재. 현재 어떤 TSX도 이 클래스를 달지 않는다. 도착 펄스는 신호 링 breathe가 담당.) */
+/* 신호 링(사용자 요청 2026-07-07) — 메일·종·일정·할일 신호가 떠 있을 때 신호 색 링.
+   투명 Electron 창에선 바깥 box-shadow가 회색/검정 윤곽을 만들므로(진단 확정) 링은
+   ::after border로 오브 안쪽 가장자리에 그린다 — 바깥으로 새지 않아 검정 테두리 함정 회피.
+   맥동(breathe): 은은↔또렷을 ~2.2s로 오가며 '여기 봐' 신호를 준다(사용자 요청: 시간을
+   두고 강조되는·튀는 색). 크기는 불변(88px 창서 잘림 방지) — 밝기·글로우만 숨쉰다. */
+.orb.has-signal::after {
+  content: "";
+  position: absolute; inset: 0; border-radius: 50%;
+  /* 링 색 = 지금 뜬 신호 색(--signal-ring, OrbApp이 도트 색과 맞춰 내려줌). 기본 앰버. */
+  border: 2px solid var(--signal-ring, #ffb84d);
+  pointer-events: none;
+  animation: orbSignalBreathe 2.2s ease-in-out infinite;
+  /* 신호가 순환(5초)해 색이 바뀔 때 부드럽게 크로스페이드. */
+  transition: border-color 0.4s ease;
+}
+@keyframes orbSignalBreathe {
+  /* 어두운 골: 링만 은은히. 밝은 마루: 안쪽으로 글로우가 확 번지며 또렷·튀게. */
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: inset 0 0 4px color-mix(in srgb, var(--signal-ring, #ffb84d) 40%, transparent);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: inset 0 0 11px color-mix(in srgb, var(--signal-ring, #ffb84d) 85%, transparent);
+  }
+}
+/* 모션 줄이기 선호 시 — 맥동 정지, 또렷한 정적 링만(신호 의미는 유지). */
+@media (prefers-reduced-motion: reduce) {
+  .orb.has-signal::after {
+    animation: none; opacity: 1;
+    box-shadow: inset 0 0 6px color-mix(in srgb, var(--signal-ring, #ffb84d) 55%, transparent);
+  }
+}
+/* 말풍선 글자 호버 반응(사용자 요청 2026-07-08) — 링 색을 빨강으로 바꾸고 빠르게 맥동.
+   신호 없어도(has-signal 아님) 반응하도록 자체 ::after를 그린다. --signal-ring을 red로
+   덮어 has-signal 링도 함께 빨개진다(색 var 재정의). */
+.orb.peek-hover { --signal-ring: #ff5a52; }
+.orb.peek-hover.has-signal::after,
+.orb.peek-hover:not(.has-signal)::after {
+  content: "";
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid #ff5a52; pointer-events: none;
+  animation: orbPeekPulse 0.8s ease-in-out infinite; /* 2.2s 숨쉬기보다 빠른 '반응' 맥동 */
+}
+@keyframes orbPeekPulse {
+  0%, 100% { opacity: 0.65; box-shadow: inset 0 0 5px rgba(255, 90, 82, 0.5); }
+  50% { opacity: 1; box-shadow: inset 0 0 13px rgba(255, 90, 82, 0.95); }
+}
+
+/* ── 새 메일 피크 — orb가 빙그르르 돌며 옆으로 말풍선이 늘어난다 ── */
+.orb-wrap {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 88px; padding: 0 4px; box-sizing: border-box;
+  /* 우하단 고정 — 접힘 전환 프레임에서 창이 아직 넓어도(리사이즈 IPC가 한 박자 늦음)
+     오브가 제자리에 그려진다. 펼침창의 우하단 = 접힌 오브 창 위치(bottom·right 앵커)라
+     픽셀 연속 → '왼쪽에 오브 잔상' 제거(사용자 발견 2026-07-05). */
+  position: fixed; left: 0; bottom: 0;
+}
+/* orb가 화면 우측 → 창이 왼쪽으로 자람 → [말풍선][orb] (orb는 오른쪽 가장자리 고정) */
+.orb-wrap.side-right { flex-direction: row; justify-content: flex-end; }
+/* orb가 화면 좌측 → [orb][말풍선] */
+.orb-wrap.side-left { flex-direction: row-reverse; justify-content: flex-end; }
+/* 평소(피크 아님)엔 orb 하나 — 88px 창에선 정렬 무관, 전환 프레임(넓은 창)에선
+   '진짜 오브가 나타날 쪽'과 정렬이 일치해야 잔상이 안 보인다. 기본(오브가 화면 우측·
+   home-right)=우측, 오브가 화면 왼쪽 경계 근처(home-left — 창이 오브 오른쪽으로
+   펼쳐진 경우)=좌측. */
+.orb-wrap:not(.peeking) { justify-content: flex-end; }
+
+/* 드래그 중 분석 가능한 앱 창 위 — orb가 살짝 커지며 빛난다("여기 놓으면 분석"). */
+/* 프로그램 창 위 도착 — 10% 확대 + 두근두근 심장박동(안쪽 붉은 빛 맥동).
+   바깥 box-shadow 금지(투명창에서 검은 사각 테두리로 렌더 — 기존 버그 원인). */
+.orb.over-app, .orb.dragging.over-app {
+  transform: scale(1.08) !important;
+  animation: orbHeartbeat 0.85s ease-in-out infinite;
+}
+@keyframes orbHeartbeat {
+  0%, 100% {
+    box-shadow:
+      inset 0 1.5px 2px rgba(255, 255, 255, 0.5),
+      inset 0 -7px 14px rgba(0, 0, 0, 0.42),
+      inset 0 0 8px rgba(216, 138, 95, 0.2);
+  }
+  50% {
+    box-shadow:
+      inset 0 1.5px 2px rgba(255, 255, 255, 0.55),
+      inset 0 -7px 14px rgba(0, 0, 0, 0.36),
+      inset 0 0 18px rgba(236, 110, 80, 0.6);
+  }
+}
+
+/* 도착 순간: 슬라임처럼 커졌다 작아졌다 5회 (사용자 결정 — 스핀 대신) */
+
+/* 말풍선(필) — orb 옆에서 늘어나는 유리 캡슐. [텍스트=분석 | ↗ Outlook | X 닫기] */
+.orb-peek {
+  display: flex; align-items: center; gap: 2px;
+  /* 창 420px - 오브 88 - gap 8 - padding 8 - 꼬리여유 → 최대 ~300px(오브 침범·잘림 방지). */
+  max-width: 300px; height: 44px; padding: 0 6px 0 4px;
+  animation: peekGrow 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: right center;
+}
+.orb-wrap.side-left .orb-peek { transform-origin: left center; }
+/* B안 만화 말풍선(2026-07-08 사용자) — 불투명 카드 + 오브 쪽 꼬리. 배경화면 무관 시인성,
+   꼬리가 오브와 '한 세트'로 묶어 링 없이 연결감(호버 시에만 펼쳐져 평상시 산만하지 않음).
+   배경은 시커먼 검정 대신 은은한 남보라 다크(오브 림과 같은 계열) + 테두리 하이라이트로
+   '떠 있는 카드' 느낌(2026-07-08 사용자: 너무 시커멓지 않게). */
+.orb-peek.toon {
+  position: relative; height: auto; padding: 9px 6px 9px 4px;
+  background: linear-gradient(155deg, #3a3d4d 0%, #2a2c39 100%);
+  border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.08);
+  /* 바깥 그림자는 투명 창에서 문서 위로 삐져나와 어색(오브도 같은 이유로 안 씀) →
+     안쪽 하이라이트만 남긴다(2026-07-08 사용자: 아래 그림자 보임). */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.orb-peek.toon::after { /* 꼬리 — 오브(오른쪽)를 가리킨다. 카드와 같은 색·테두리. */
+  content: ""; position: absolute; right: -6px; top: 50%;
+  width: 13px; height: 13px; border-radius: 3px;
+  background: #2c2e3b; border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateY(-50%) rotate(45deg);
+}
+.orb-wrap.side-left .orb-peek.toon::after {
+  right: auto; left: -6px;
+  border-right: none; border-top: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.orb-peek-text {
+  flex: 1; min-width: 0; height: 100%; padding: 0 4px 0 10px;
+  border: none; background: none; cursor: pointer; text-align: left;
+  color: #eef1f6; font-size: 13.5px; /* 불투명 카드라 밝은 글자로 복귀 */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.orb-peek-text:hover { color: #fff; }
+.orb-peek-btn {
+  flex: none; width: 24px; height: 24px; border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: rgba(255, 255, 255, 0.08); color: #aeb4c0; font-size: 13px;
+}
+.orb-peek-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+@keyframes peekGrow {
+  0% { transform: scaleX(0.1); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}

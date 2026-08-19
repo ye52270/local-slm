@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  몰두봇 로컬 메일 요약 — Outlook 추가 기능 매니페스트 (XML, 새 Outlook · 클래식 · 웹 공통)
+  - Graph API 를 쓰지 않는다. 작업창(taskpane.html)이 Office.js 로 현재 메일을 읽고,
+    같은 출처(https://localhost:8443)의 llama-server 로 요약한다.
+  - 추가 기능 페이지는 https 여야 한다 → llama-server 를 SSL 옵션(ssl-key-file, ssl-cert-file)으로 띄운다 (README 참조).
+  - 사이드로드: 새 Outlook → 앱 → 추가 기능 → 사용자 지정 추가 기능 → 파일에서 추가.
+-->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
+           xsi:type="MailApp">
+  <Id>7f2c1a4e-3b6d-4c1e-9a55-0d5f2b7e8c11</Id>
+  <Version>0.1.0</Version>
+  <ProviderName>SK AX 야르</ProviderName>
+  <DefaultLocale>ko-KR</DefaultLocale>
+  <DisplayName DefaultValue="몰두봇 메일 요약"/>
+  <Description DefaultValue="이 PC 의 로컬 SLM 으로 메일을 요약하고 할 일과 기한을 뽑습니다. 메일 내용은 PC 밖으로 나가지 않습니다."/>
+  <IconUrl DefaultValue="https://localhost:8443/addin/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:8443/addin/icon-128.png"/>
+  <SupportUrl DefaultValue="https://localhost:8443/"/>
+  <AppDomains>
+    <AppDomain>https://localhost:8443</AppDomain>
+    <AppDomain>http://127.0.0.1:8080</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Mailbox"/>
+  </Hosts>
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://localhost:8443/addin/taskpane.html"/>
+        <RequestedHeight>450</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  </Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.3">
+        <bt:Set Name="Mailbox"/>
+      </bt:Sets>
+    </Requirements>
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <FunctionFile resid="Taskpane.Url"/>
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="msgReadGroup">
+                <Label resid="Group.Label"/>
+                <Control xsi:type="Button" id="msgReadOpenPaneButton">
+                  <Label resid="Button.Label"/>
+                  <Supertip>
+                    <Title resid="Button.Label"/>
+                    <Description resid="Button.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="Taskpane.Url"/>
+                    <SupportsPinning>true</SupportsPinning>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://localhost:8443/addin/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://localhost:8443/addin/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://localhost:8443/addin/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:8443/addin/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Group.Label" DefaultValue="몰두봇"/>
+        <bt:String id="Button.Label" DefaultValue="메일 요약"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Button.Tooltip" DefaultValue="로컬 SLM 으로 이 메일의 요점·할 일·기한을 뽑습니다"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

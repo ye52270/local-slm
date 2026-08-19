@@ -1,0 +1,73 @@
+{
+  "schema": "moldubot-mail-labels-v1",
+  "items": [
+    {
+      "id": "s1",
+      "subject": "[안내/요청] 8월 데이터 품질 점검 결과 회신 요청",
+      "sender": "김하늘(KIM HANEUL)/데이터플랫폼팀/ACME",
+      "received": "2026-08-18 09:12",
+      "body_preview": "⚠보안 경고\n본 메일은 외부에서 발송되어 열람 시 주의를 요합니다.\n악성코드 감염 예방을 위해 아래 사항을 반드시 확인하여 주세요.\n①발신자와 메일 주소, ②본문 링크 주소나 첨부파일 확장자\n\n안녕하세요, 데이터플랫폼팀 김하늘입니다.\n\n8월 데이터 품질 점검 결과를 첨부와 같이 공유드립니다. 담당 모듈의 이상치 3건에 대해 원인과 조치 계획을 8월 20일(목) 16:00까지 회신 부탁드립니다.\n회신은 이 메일에 답장으로 주시면 됩니다.\n\n감사합니다.\n김하늘 드림\n\n----- 원본 메시지 -----\n발신인: \"이도윤\" <doyun@e",
+      "action_items": [
+        "담당 모듈 이상치 3건 원인과 조치 계획 회신"
+      ],
+      "deadline": "2026-08-20",
+      "category": "action_required",
+      "priority": "high",
+      "note": ""
+    },
+    {
+      "id": "s2",
+      "subject": "[만족도조사요청] 서비스데스크 접수 건 처리 만족도 조사",
+      "sender": "ServiceDesk",
+      "received": "2026-08-18 13:51",
+      "body_preview": "접수하신 [SD-2026-0817][N/W]_사내 특정 사이트 접속 불가 건이 처리 완료되었습니다.\n처리 결과에 대한 만족도 조사에 참여해 주세요. 조사는 2026-08-18부터 3일간 유효합니다 (2026-08-20 만료).\n링크: https://example.com/survey/0817\n\n본 메일은 발신 전용입니다.",
+      "action_items": [
+        "만족도 조사 응답"
+      ],
+      "deadline": "2026-08-20",
+      "category": "notice",
+      "priority": "medium",
+      "note": ""
+    },
+    {
+      "id": "s3",
+      "subject": "RE: I/F 목록 (ERP <-> 기타시스템) 담당모듈 정리 파일 송부",
+      "sender": "박서준/협력사/ACME",
+      "received": "2026-08-18 13:33",
+      "body_preview": "안녕하세요.\n운영팀에서 전달받은 기준 인터페이스 목록을 첨부합니다. ERP 인터페이스 담당자가 목록을 확정할 때까지는 첨부 기준으로 업무 참조 부탁드립니다.\n인터페이스 구현·연계 관점에서 추가 확인이 필요하거나 목록에 포함해야 할 사항이 있으면 알려주세요.\n\n감사합니다.\n\nFrom: 홍길동\nSent: Monday, August 17, 2026 5:19 PM\nSubject: I/F 목록 정리 요청\n담당모듈 기준으로 정리 부탁드립니다.",
+      "action_items": [
+        "첨부 인터페이스 목록 검토 후 추가 확인 사항 회신"
+      ],
+      "deadline": null,
+      "category": "action_required",
+      "priority": "medium",
+      "note": ""
+    },
+    {
+      "id": "s4",
+      "subject": "Your mailbox is almost full.",
+      "sender": "Microsoft Outlook",
+      "received": "2026-08-18 15:37",
+      "body_preview": "Your mailbox is almost full. 4.9 GB of 5 GB used.\nTo make room in your mailbox, delete any items you don't need and empty your Deleted Items folder.",
+      "action_items": [
+        "불필요한 메일 삭제, 지운 편지함 비우기"
+      ],
+      "deadline": null,
+      "category": "notice",
+      "priority": "medium",
+      "note": ""
+    },
+    {
+      "id": "s5",
+      "subject": "[개발자 프로그램] 신청 승인 안내",
+      "sender": "Developer Program",
+      "received": "2026-08-17 18:01",
+      "body_preview": "개발자 프로그램 신청이 승인되었습니다. 파트너 혜택을 이용할 수 있습니다. 별도로 하실 일은 없습니다.",
+      "action_items": [],
+      "deadline": null,
+      "category": "notice",
+      "priority": "low",
+      "note": ""
+    }
+  ]
+}

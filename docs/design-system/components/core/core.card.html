@@ -1,0 +1,42 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Core — 버튼 · 칩 · 태그 · 신호" subtitle="액션 하나당 primary 하나, 뱃지 빨강은 화면에 하나" -->
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>
+*{box-sizing:border-box}body{margin:0;padding:18px 20px;background:#1c1d21;color:#ececee;font-family:var(--font-ui)}
+.grp{display:flex;flex-direction:column;gap:14px}
+.line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:#6c6c74;width:76px;flex:none}
+</style></head><body><div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Button, Chip, CountChip, Tag, SignalButton, PanelShell, ApprovalBox, AgentTrace, MailResultCard, OrbLed } = window.DesignSystem_15a016;
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div className="grp">
+    <div className="line"><span className="lbl">BUTTON</span>
+      <Button variant="primary" icon="pencil">답장 초안 만들기</Button>
+      <Button icon="mail-opened">후속 메일 열기</Button>
+      <Button variant="ghost">나중에</Button>
+      <Button variant="ok" icon="send">승인</Button>
+      <Button disabled icon="wand">스킬 만들기</Button>
+      <span style={{fontFamily:'var(--font-mono)',fontSize:10.5,color:'#6c6c74'}}>준비 중</span>
+    </div>
+    <div className="line"><span className="lbl">CHIP</span>
+      <Chip accent icon="pencil">독촉 메일 초안 만들기</Chip>
+      <Chip>병목 단계 자세히 보기</Chip>
+      <Chip>회신 기한 일정 등록</Chip>
+    </div>
+    <div className="line"><span className="lbl">COUNT</span>
+      <CountChip label="일정" count={1} /><CountChip label="할 일" count={2} />
+      <CountChip label="후속" count={6} /><CountChip label="지연" count={8} urgent />
+      <span style={{width:18}} />
+      <Tag tone="follow">회신 필요</Tag><Tag tone="urgent">지연 27일</Tag>
+    </div>
+    <div className="line"><span className="lbl">SIGNAL</span>
+      <SignalButton kind="mail" count={1} urgent /><SignalButton kind="bell" count={6} />
+      <SignalButton kind="cal" count={2} /><SignalButton kind="todo" count={2} /><SignalButton kind="timer" />
+    </div>
+  </div>
+);
+</script></body></html>

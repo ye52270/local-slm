@@ -1,0 +1,30 @@
+# 실제 메일·개인 데이터 (절대 커밋하지 않음)
+/data/
+web/data/inbox.json
+windows/web/data/inbox.json
+windows/cache.json
+windows/*.log
+windows/resource-log.csv
+eval/labels.json
+eval/labels.*.json
+!eval/labels.sample.json
+results-*.json
+*.score.json
+
+# 모델·바이너리·패키지 (용량)
+models/
+bin/
+windows/bin/
+*.gguf
+*.zip
+*.tar.gz
+
+# 로컬 산출물
+# build-win.sh 가 web/·eval/ 에서 복사해 만든 사본
+windows/web/
+windows/eval/
+__pycache__/
+.DS_Store
+.claude/
+docs/design-system/uploads/
+docs/design-system/scraps/

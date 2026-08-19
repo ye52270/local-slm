@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko" data-tone="graphite" data-theme="day">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>몰두봇 — 메일 브리핑 (로컬 SLM)</title>
+<link rel="stylesheet" href="ds/styles.css">
+<link rel="stylesheet" href="ds/panel.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="page" id="page">
+  <div class="topbar">
+    <span class="lbl">몰두봇 · 메일 브리핑</span>
+    <span class="seg" role="group" aria-label="테마">
+      <button type="button" data-mode-btn="light" class="on">라이트</button>
+      <button type="button" data-mode-btn="dark">다크</button>
+    </span>
+    <span class="seg" role="group" aria-label="소스">
+      <button type="button" data-src-btn="inbox" class="on">받은 편지함</button>
+      <button type="button" data-src-btn="sample">샘플</button>
+    </span>
+    <span class="seg" role="group" aria-label="모델" id="modelSeg"></span>
+    <button type="button" class="lnk" id="btnExport" title="현재 목록의 요약 결과를 JSON 으로 저장 (평가용)">결과 내보내기</button>
+    <span class="lbl faint" id="srvInfo">서버 확인 중</span>
+    <button type="button" class="lnk" id="btnRefresh" title="캐시를 무시하고 전부 다시 요약합니다 (시간이 걸립니다)">다시 요약</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="kit" data-mode="light" id="kit">
+      <div class="dock">
+        <div class="col">
+          <div class="bubble" id="toast" hidden>
+            <span class="tail"></span>
+            <div class="bubble-body" id="toastBody">
+              <span class="bubble-icon round"><i class="ti ti-mail" id="toastIcon"></i></span>
+              <span class="bubble-txt"><span class="bubble-t" id="toastTitle"></span><span class="bubble-m" id="toastMsg"></span></span>
+              <button type="button" class="bubble-x" id="toastClose" aria-label="닫기"><i class="ti ti-x"></i></button>
+            </div>
+          </div>
+          <div class="launcher" id="launcher">
+            <div class="statusline" id="statusline">
+              <span class="live" id="live"></span>
+              <span class="model" id="modelLine">Local SLM</span>
+              <span class="when" id="whenLine"></span>
+            </div>
+            <div class="body" id="body">
+              <div class="stream" id="stream"></div>
+              <div class="artifact" id="artifact" hidden></div>
+            </div>
+            <div class="palette" id="palette" hidden></div>
+            <form class="composer" id="composer" autocomplete="off">
+              <i class="ti ti-sparkles spark"></i>
+              <span class="focustag" id="focustag" hidden><i class="ti ti-pin"></i><span class="t" id="focusText"></span><button type="button" id="focusClear" aria-label="포커스 해제"><i class="ti ti-x"></i></button></span>
+              <span class="field"><input id="cmd" placeholder="무엇을 볼까요 — 오늘 리포트 · 이번 주 · 오늘 마무리 · 메일 검색"></span>
+              <button type="button" class="qchip" id="queueChip" hidden title="모델 대기열"><i class="ti ti-loader-2"></i><span id="queueText"></span></button>
+              <span class="sigs">
+                <button type="button" class="sig" id="sigMail" style="color:var(--sig-mail);background:var(--sig-mail-bg)" title="할 일"><i class="ti ti-mail"></i><span class="sig-badge neutral" id="sigMailBadge">0</span></button>
+              </span>
+              <span class="kbd">⌥Space</span>
+            </form>
+          </div>
+        </div>
+        <button type="button" class="orb" id="orb" title="몰두봇 열기 / 접기" aria-label="몰두봇 열기 / 접기">
+          <span class="led"><canvas width="168" height="168"></canvas></span>
+          <span class="gloss"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="pipeline.js"></script>
+<script src="orb.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
