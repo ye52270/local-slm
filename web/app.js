@@ -55,10 +55,10 @@
     // 오브 상태: 연결 없음 → sorry / 요약·초안 작업 중 → clock+무지개 링 / 그 외 → idle (완료·새 메일은 flash 로 잠깐)
     if (!orb) return;
     if (!state.online) return orb.set('sorry', false);
-    const working = Object.keys(state.pending).length > 0 || (state.draft && state.draft.busy) || !!state.queueRunning;
-    if (working) return orb.set('clock', true);
+    const working = Object.keys(state.pending).length > 0 || (state.draft && state.draft.busy) || !!state.queueRunning || state.queue.length > 0;
+    if (working) { clearTimeout(orbDoneTimer); return orb.set('clock', true); }
     // WPF EmotionController 와 같은 의미: Thinking(작업 중) → Happy(완료, 4초 transient) → Idle. Alert(새 메일) 는 8초.
-    if (orb.busy) { orb.set('heart', false); clearTimeout(orbDoneTimer); orbDoneTimer = setTimeout(() => orb.set('idle', false), 4000); return; }
+    if (orb.busy) { orb.set('heart', false); clearTimeout(orbDoneTimer); orbDoneTimer = setTimeout(() => { if (!state.queueRunning && !state.queue.length) orb.set('idle', false); }, 4000); return; }
     if (!['heart', 'mail'].includes(orb.face)) orb.set('idle', false);
   }
   let toastTimer = null;
@@ -570,6 +570,9 @@
       if (!force && state.slots[m.id]) continue;
       if (!force) { const c = P.cache.get(m, state.model); if (c) { state.slots[m.id] = c; continue; } }
       const model = state.model;
+      // 규칙으로 분류되는 메일(광고·인증·자동발송)은 대기열 없이 즉시
+      const tri = P.triage(m);
+      if (tri.skip) { const s0 = P.ruleSlots ? P.ruleSlots(m, tri) : null; if (s0) { state.slots[m.id] = s0; P.cache.set(m, model, s0); continue; } }
       queueAdd({ key: `summary|${model}|${m.id}`, kind: 'summary', mailId: m.id, label: m.subject, run: async () => {
         if (state.model !== model) return;               // 그 사이 모델이 바뀜 → 새 루프가 다시 등록
         state.pending[m.id] = true; render();

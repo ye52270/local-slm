@@ -378,6 +378,6 @@
   global.MailPipeline = {
     PROMPT_VERSION, DEFAULTS, SCHEMA,
     cleanBody, selectRelevant, parseReceived, iso, shortWhen, splitSender,
-    systemPrompt, userPrompt, extract, draftReply, health, findEvidence, findDeadlines, triage, cache,
+    systemPrompt, userPrompt, extract, draftReply, health, findEvidence, findDeadlines, triage, ruleSlots, cache,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
