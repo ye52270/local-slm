@@ -326,9 +326,25 @@ def main():
         print(f"· 브리핑 패널: {url}  (Ctrl+C 로 서버 종료)")
         webbrowser.open(url)
         try:
+            last_sel = None
+            tick = 0
             while True:
-                time.sleep(args.watch or 3600)
-                if args.watch:
+                time.sleep(5 if args.watch else 3600)
+                if not args.watch:
+                    continue
+                tick += 5
+                # 선택 메일: 5초마다 (바뀌었을 때만 파일 갱신)
+                try:
+                    from fetch_outlook import fetch_selected
+                    sel = fetch_selected()
+                    sid = sel["id"] if sel else None
+                    if sid != last_sel:
+                        last_sel = sid
+                        (ROOT / "web/data/selected.json").write_text(json.dumps(sel, ensure_ascii=False), encoding="utf-8")
+                except Exception:
+                    pass
+                if tick >= args.watch:
+                    tick = 0
                     subprocess.run([sys.executable, str(ROOT / "fetch_outlook.py"),
                                     "--limit", str(args.fetch_limit), "--out", str(dst)], check=False,
                                    stdout=subprocess.DEVNULL)

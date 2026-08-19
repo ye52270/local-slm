@@ -81,6 +81,46 @@ def clean_body(text: str) -> str:
     return text.strip()
 
 
+SELECTED_SCRIPT = '''
+tell application "Microsoft Outlook"
+    set FS to (ASCII character 31)
+    set sel to selection
+    if class of sel is list then
+        if (count of sel) is 0 then return ""
+        set m to item 1 of sel
+    else
+        set m to sel
+    end if
+    try
+        set sndr to sender of m
+        set sName to name of sndr
+        set sAddr to address of sndr
+    on error
+        set sName to ""
+        set sAddr to ""
+    end try
+    set body to ""
+    try
+        set body to plain text content of m
+    end try
+    return (id of m) & FS & (subject of m) & FS & sName & FS & sAddr & FS & ((time received of m) as string) & FS & body
+end tell
+'''
+
+
+def fetch_selected():
+    """Outlook 에서 지금 선택한 메일 1통 (패널 '이 메일 요약' 연동용). 없으면 None."""
+    proc = subprocess.run(["osascript", "-"], input=SELECTED_SCRIPT, capture_output=True, text=True, timeout=30)
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    parts = proc.stdout.rstrip("\n").split("\x1f")
+    if len(parts) < 6:
+        return None
+    mid, subject, s_name, s_addr, received, body = parts[:6]
+    return {"id": mid.strip(), "subject": subject.strip(), "sender_name": s_name.strip(), "sender_addr": s_addr.strip(),
+            "received": received.strip(), "body": clean_body(body)}
+
+
 def fetch(folder: str, limit: int) -> list[dict]:
     proc = subprocess.run(
         ["osascript", "-", folder, str(limit)],
@@ -115,7 +155,15 @@ def main():
     ap.add_argument("--folder", default="inbox", help='"inbox" 또는 폴더 이름 (예: "보낸 편지함")')
     ap.add_argument("--limit", type=int, default=20)
     ap.add_argument("--out", default="data/inbox.json")
+    ap.add_argument("--selected", action="store_true", help="선택한 메일 1통만 --out 으로 (없으면 null)")
     args = ap.parse_args()
+
+    if args.selected:
+        m = fetch_selected()
+        out = Path(args.out); out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
+        print("선택 메일:", m["subject"] if m else "없음")
+        return
 
     mails = fetch(args.folder, args.limit)
     out = Path(args.out)

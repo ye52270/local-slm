@@ -21,6 +21,12 @@ data/              inbox.json(메일 덤프), cache.sqlite(추출 결과), llama
 발신자·수신일은 Outlook 메타데이터를 그대로 쓰고, 나머지 슬롯만 SLM이 채운다.
 llama.cpp의 GBNF 문법 강제 덕분에 모델이 스키마를 벗어난 JSON을 낼 수 없다.
 
+## 빠른 시작
+
+- **Mac**: `python3 summarize.py --panel --fetch --watch 300` → 브라우저에 브리핑 패널(오브·팔레트·리포트). Outlook 클래식 필요.
+- **Windows/VDI**: `local-slm-win-demo.zip`(`build-win.sh` 로 생성) 을 풀고 `Run-Demo.cmd -Panel -Watch`. 자세한 건 `windows/README-win.md`.
+- 화면·동작 명세: `docs/direction.md` §2b · 파이프라인 규칙 §3.
+
 ## 브리핑 패널 · 새 Outlook 추가 기능
 
 콘솔 표 대신 디자인 시스템(`docs/design-system`) 기반 화면으로 보려면:
