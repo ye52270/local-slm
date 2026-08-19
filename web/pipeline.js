@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  const PROMPT_VERSION = 'v9';
+  const PROMPT_VERSION = 'v10';
 
   const DEFAULTS = {
     base: '',                 // '' = 같은 출처(llama-server --path 로 서빙할 때). 아니면 'http://127.0.0.1:8080'
@@ -250,6 +250,14 @@
     return out;
   }
   // 슬롯 문장의 근거가 되는 원문 문장 하나를 고른다 (2-gram 겹침 최대)
+  const COMMIT_END_RE = /(하겠습니다|드리겠습니다|되겠습니다|예정입니다|하겠음|드릴게요|할게요|하겠어요)\s*[.!~…]*\s*$/;
+  const REQUEST_RE = /부탁|주세요|주시(면|기|길)|바랍니다|바라며|요청\s*드|요청합니다|필요합니다|해\s*주|주십시오|해주십시오|주실 수|가능할까요|해도 될까요|확인\s*바/;
+  function isSenderCommitment(evidence) {
+    if (!evidence) return false;
+    const e = String(evidence).trim().replace(/["“”')]+$/, '');
+    return COMMIT_END_RE.test(e) && !REQUEST_RE.test(e);
+  }
+
   function findEvidence(body, claim) {
     if (!claim) return '';
     const cb = bigrams(claim); if (!cb.size) return '';
@@ -305,7 +313,11 @@
     for (let it of (d.action_items || [])) {
       it = String(it).trim();
       if (!it || /^(deadline|priority|category|summary|other)\s*:/i.test(it)) continue;
-      if (!seen.has(it)) { seen.add(it); items.push(it); }
+      if (seen.has(it)) continue;
+      // v10: 근거 문장이 발신자 자신의 약속("~하겠습니다")이고 요청 표현이 없으면 내 할 일이 아니다
+      const ev = findEvidence(cleaned, it);
+      if (isSenderCommitment(ev)) continue;
+      seen.add(it); items.push({ text: it, evidence: ev });
       if (items.length >= 3) break;
     }
     const recv = parseReceived(mail.received);
@@ -329,7 +341,7 @@
     }
     return {
       summary: String(d.summary || '').trim(),
-      actionItems: items.map((t) => ({ text: t, evidence: findEvidence(cleaned, t) })),
+      actionItems: items,
       deadline,
       deadlineSource,
       deadlineEvidence: deadline ? ((cands.find((c) => c.date === deadline) || {}).evidence || findEvidence(cleaned, deadline.slice(5).replace('-', '월 ') + '일 까지 기한')) : '',
