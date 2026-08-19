@@ -562,8 +562,9 @@ try {
     $modelPath = Resolve-Model
     Load-Cache
 
-    if ($Watch) {
-        # 감시 모드: 서버를 띄워 두고 새 메일이 오면 즉시 요약해 캐시. Ctrl+C 로 종료.
+    if ($Watch -and -not $Panel) {
+        # 콘솔 감시 모드(-Watch 단독): 서버를 띄워 두고 새 메일이 오면 즉시 요약해 캐시. Ctrl+C 로 종료.
+        # (-Panel -Watch 는 아래 패널 분기에서 처리 — 5분 내보내기 + 선택 메일)
         Start-Server -ModelPath $modelPath
         $script:SinceTime = (Get-Date).AddMinutes(-1)
         Write-Host "· 감시 시작 (주기 $WatchInterval 초, 모델 $(Split-Path -Leaf $modelPath)). 새 메일이 오면 요약해 둡니다. Ctrl+C 로 종료." -ForegroundColor Green
